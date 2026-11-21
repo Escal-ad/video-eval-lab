@@ -40,13 +40,13 @@
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Caption 标注数据</h2><span class="sub">3 个待导入 clip · 共 7 段</span></div>
+      <div class="section-head"><h2>Caption 标注数据</h2><span class="sub">3 条实拍素材 · 各 1 个连续镜头</span></div>
       <table class="table">
         <thead><tr><th>clip</th><th>内容</th><th>时长</th><th>分段</th><th>状态</th></tr></thead>
         <tbody>
-          <tr><td><code>cap-01</code></td><td>素材 01</td><td>12s</td><td>3</td><td><span class="chip soon">待导入</span></td></tr>
-          <tr><td><code>cap-02</code></td><td>素材 02</td><td>9s</td><td>2</td><td><span class="chip soon">待导入</span></td></tr>
-          <tr><td><code>cap-03</code></td><td>素材 03</td><td>8s</td><td>2</td><td><span class="chip soon">待导入</span></td></tr>
+          <tr><td><code>cap-01</code></td><td>低照度人物特写</td><td>8.5s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
+          <tr><td><code>cap-02</code></td><td>黑白餐厅对话</td><td>11s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
+          <tr><td><code>cap-03</code></td><td>雨中新叶</td><td>11s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
         </tbody>
       </table>
 
@@ -55,24 +55,25 @@
       </p>
       <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.65;margin-top:10px;">{
   "clip_id": "cap-01",
-  "title": "素材 01",
-  "source": "待导入 / 本地素材",
-  "duration_sec": 12,
+  "title": "低照度人物特写",
+  "source": "实拍 / interview-clips",
+  "video": "assets/caption/cap-01_low-key.mp4",
+  "duration_sec": 8.5,
   "resolution": "1280x720",
   "shots": [
     {
       "start": 0.0,
-      "end": 3.4,
-      "caption": "第一段画面描述",
+      "end": 3.0,
+      "caption": "幽暗林间，蓝发女孩穿暗红上衣，手握螺旋木杖，抬眼看向左前方，神情警觉。",
       "dims": {
         "tone": "冷调",
         "angle": "平视",
-        "composition": "三分法",
+        "composition": "中心构图",
         "lighting": "侧光",
-        "shot_size": "中景",
+        "shot_size": "特写",
         "camera": "固定"
       },
-      "evidence_ts": 2.1
+      "evidence_ts": 1.2
     }
   ],
   "annotator": "demo",
@@ -187,9 +188,12 @@
     <section class="section">
       <div class="section-head"><h2>目录与文件命名</h2><span class="sub">接入素材时按这个放</span></div>
       <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.7;">video-eval-lab/
+├─ assets/
+│  └─ caption/
+│     ├─ cap-01_low-key.mp4
+│     ├─ cap-02_restaurant.mp4
+│     └─ cap-03_rain.mp4
 ├─ data/
-│  ├─ caption/
-│  │  └─ cap-01/source.mp4
 │  ├─ t2v/
 │  │  └─ T01/
 │  │     ├─ seedance-2.0.mp4

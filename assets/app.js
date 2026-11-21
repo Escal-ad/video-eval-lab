@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const KEY = "velab_v1";
+  const KEY = "velab_v2";
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
@@ -10,39 +10,38 @@
     captionTasks: [
       {
         id: "cap-01",
-        title: "素材 01",
-        source: "待导入 · 建议 8–15s",
-        video: "",
-        duration: 12,
+        title: "低照度人物特写",
+        source: "实拍 · 8.5s · 单镜头",
+        video: "assets/caption/cap-01_low-key.mp4",
+        duration: 8.5,
         status: "todo",
+        scores: { tone: "冷调", angle: "平视", composition: "中心构图", lighting: "侧光", shot_size: "特写", camera: "固定" },
         segments: [
-          { start: 0.0, end: 3.4, caption: "" },
-          { start: 3.4, end: 7.2, caption: "" },
-          { start: 7.2, end: 12.0, caption: "" }
+          { start: 0.0, end: 8.5, caption: "幽暗林间，蓝发女孩穿暗红上衣，手握螺旋木杖，先警觉地抬眼看左前方，随后闭眼、双手在胸前合拢默念，最后重新握紧木杖直视前方，眼神由迟疑转为坚定。" }
         ]
       },
       {
         id: "cap-02",
-        title: "素材 02",
-        source: "待导入 · 建议 8–15s",
-        video: "",
-        duration: 9,
+        title: "黑白餐厅对话",
+        source: "实拍 · 黑白 · 11s · 单镜头",
+        video: "assets/caption/cap-02_restaurant.mp4",
+        duration: 10.96,
         status: "todo",
+        scores: { tone: "低饱和", angle: "平视", composition: "中心构图", lighting: "侧光", shot_size: "中景", camera: "固定" },
         segments: [
-          { start: 0.0, end: 4.0, caption: "" },
-          { start: 4.0, end: 9.0, caption: "" }
+          { start: 0.0, end: 10.96, caption: "黑白餐厅吧台前，穿浅色西装的男子侧身对戴条纹帽的女子说话，随后伸手扶住她的手臂、前倾压低声音解释；女子先听他讲，随后抬眼迎着他的视线，两人靠近到几乎贴面，镜头保持双人中景。" }
         ]
       },
       {
         id: "cap-03",
-        title: "素材 03",
-        source: "待导入 · 建议 8–15s",
-        video: "",
-        duration: 8,
+        title: "雨中新叶",
+        source: "实拍 · 11s · 单镜头",
+        video: "assets/caption/cap-03_rain.mp4",
+        duration: 10.96,
         status: "todo",
+        scores: { tone: "暖调", angle: "平视", composition: "中心构图", lighting: "逆光", shot_size: "特写", camera: "固定" },
         segments: [
-          { start: 0.0, end: 3.2, caption: "" },
-          { start: 3.2, end: 8.0, caption: "" }
+          { start: 0.0, end: 10.96, caption: "雨丝打在新叶和深色枝干上，叶片被逆光勾出亮边，背景虚化成暖色天光；随后雨势变密，水珠从叶尖滴落，镜头轻微晃动，右后方出现镜头光斑，浅景深保持不变。" }
         ]
       }
     ],
@@ -166,7 +165,7 @@
   function getCaption(task) {
     if (!store.caption[task.id]) {
       store.caption[task.id] = {
-        scores: {},
+        scores: { ...(task.scores || {}) },
         segments: task.segments.map(s => ({ ...s })),
         evidence: "",
         confidence: "medium",
@@ -455,7 +454,9 @@
     });
     $("#export-btn").addEventListener("click", () => dl("caption-annotations.json", store.caption));
 
-    select(DATA.captionTasks[0].id);
+    const wanted = new URLSearchParams(location.search).get("task");
+    const initial = DATA.captionTasks.some(t => t.id === wanted) ? wanted : DATA.captionTasks[0].id;
+    select(initial);
   }
 
   /* ---------------- t2v page ---------------- */
