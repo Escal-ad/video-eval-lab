@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.1",
+  "updated_at": "2026-11-21",
+  "notes": {
+    "scope": "演示版：2 个 T2V + 2 个交互场景。目标是展示评测流程、判据和归因，不做统计排名。",
+    "interactive": "同一动作序列在三家模型上各跑一次；单场景控制在 60 秒内，保证 Hy-Nomas（60s）也能完成。",
+    "t2v": "T2V 用同一段中文 prompt 生成/取公开视频；只评视觉，不评音频。",
+    "sample_size_warning": "N=2 是案例研究（case study），不足以支撑模型排名；公开排名引用 AVGen-Bench，本站只演示方法与判据。"
+  },
+  "scoring_dims": {
+    "interactive": ["instruction", "physics", "camera", "memory"],
+    "interactive_extra": ["latency_ms", "effective_duration_sec"],
+    "t2v": ["text_consistency", "quality", "structure_stability", "motion", "aesthetics"]
+  },
+  "interactive_scenes": [
+    {
+      "id": "S02",
+      "name": "绕桌一圈回起点",
+      "category": "spatial_memory",
+      "start": "房间中央有一张桌子，桌上有红色杯子；从桌子正面出发",
+      "actions": ["沿桌子右侧绕行 6 秒", "回到起点，面向桌子"],
+      "expect": "回到起点时桌子、杯子的位置与初始一致；遮挡关系正确",
+      "dims": ["memory", "camera", "instruction"],
+      "duration_sec": 10,
+      "why_this_case": "只用移动就能测，三家都能完成；直接对应腾讯项目里的“同位姿对照”，是整站最能讲深的一条。"
+    },
+    {
+      "id": "S05",
+      "name": "180 度转身",
+      "category": "consistency",
+      "start": "站在一个有明显地标的广场中央，面向地标",
+      "actions": ["转身 180 度", "停 2 秒", "再转回 180 度"],
+      "expect": "背后的场景合理；转回后地标、建筑位置不漂移",
+      "dims": ["memory", "camera"],
+      "duration_sec": 8,
+      "why_this_case": "不需要物体交互，纯视角变化；失败时肉眼可见，适合 30 秒讲清楚。"
+    }
+  ],
+  "t2v_cases": [
+    {
+      "id": "T01",
+      "name": "中文招牌文字",
+      "category": "text_rendering",
+      "prompt": "夜晚的便利店门口，招牌上写着「24小时营业」，镜头缓慢推近，霓虹灯在湿地面反光",
+      "duration_sec": 5,
+      "dims": ["text_consistency", "aesthetics"],
+      "expect": "「24小时营业」六个字完整、无错字、不闪烁",
+      "why_this_case": "中文文字渲染是国产模型的主场，也是海外模型的常见短板；一条就能拉开对比。"
+    },
+    {
+      "id": "T03",
+      "name": "叠杯倒塌",
+      "category": "physics",
+      "prompt": "桌面上叠着六个白色纸杯，一只手从左侧推倒它们，纸杯散落，慢动作",
+      "duration_sec": 5,
+      "dims": ["physics", "motion", "quality"],
+      "expect": "纸杯按重力散落，相互碰撞合理，不穿模",
+      "why_this_case": "物理交互是 T2V 最直观的失分点；慢动作让穿模、黏连、凭空消失都看得见。"
+    }
+  ],
+  "backlog": {
+    "interactive": ["S01 走廊左转", "S03 推球撞瓶", "S04 走进水池", "S06 开门再关门", "S07 镜头环绕角色", "S08 离开房间原路返回", "S09 走跳蹲组合", "S10 盯物体 10 秒"],
+    "t2v": ["T02 人物奔跑", "T04 镜头推进与环绕", "T05 多物体属性绑定", "T06 水墨风格一致性"]
+  }
+}

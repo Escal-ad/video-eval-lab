@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>视频 Caption 标注 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="caption">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="workbench">
+      <!-- queue -->
+      <aside class="col queue">
+        <div class="queue-head">
+          <h3>任务队列</h3>
+          <span class="count" id="q-count">0 / 0</span>
+        </div>
+        <div class="filters">
+          <button class="chip-btn on" data-filter="all">全部</button>
+          <button class="chip-btn" data-filter="todo">未完成</button>
+          <button class="chip-btn" data-filter="done">已提交</button>
+        </div>
+        <div id="queue-list"></div>
+      </aside>
+
+      <!-- workspace -->
+      <section class="col workspace">
+        <div class="stage-head">
+          <div>
+            <div class="stage-title" id="stage-title">—</div>
+            <div class="stage-sub" id="stage-sub">—</div>
+          </div>
+          <span class="chip demo">caption · 六维</span>
+        </div>
+
+        <div class="video-stage">
+          <span class="stage-label">VIDEO PLACEHOLDER</span>
+          <div class="stage-center">
+            <button class="play-big" id="play-btn" type="button">▶</button>
+            <span class="stage-note">接入 clip 后，这里播放真实视频</span>
+          </div>
+          <span class="corner" id="timecode">00:00.0 / 00:00.0</span>
+        </div>
+
+        <div class="transport">
+          <button class="btn small" id="prev-btn" type="button">← 上一镜</button>
+          <button class="btn small" id="next-btn" type="button">下一镜 →</button>
+          <button class="btn small" id="local-btn" type="button">导入本地视频</button>
+          <input id="local-file" type="file" accept="video/*" hidden>
+          <span class="spacer"></span>
+          <span class="timecode">先点“导入本地视频”换素材；点击时间轴可定位</span>
+        </div>
+
+        <div class="timeline">
+          <div class="track" id="track"></div>
+          <div class="ruler" id="ruler"></div>
+        </div>
+
+        <div class="seg-table" id="seg-table"></div>
+      </section>
+
+      <!-- panel -->
+      <aside class="col panel">
+        <h3 id="panel-title">六维评分</h3>
+        <div class="panel-sub" id="panel-sub">按镜头打分；低分必须写理由</div>
+        <div id="dims"></div>
+
+        <div class="field">
+          <label for="caption-text">本镜 caption</label>
+          <textarea id="caption-text" placeholder="描述这一镜的画面：主体、动作、镜头语言……"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="evidence">证据时间戳</label>
+          <div class="inline">
+            <input id="evidence" placeholder="例如 00:03.4">
+            <button class="btn small" id="evidence-btn" type="button">取当前</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="confidence">置信度</label>
+          <select id="confidence">
+            <option value="high">高 — 我能给出明确理由</option>
+            <option value="medium" selected>中 — 基本确定</option>
+            <option value="low">低 — 需要复核</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="save-btn" type="button">保存草稿</button>
+          <button class="btn primary" id="submit-btn" type="button">提交</button>
+        </div>
+        <div class="status-line" id="status-line"></div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
+          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BadCase 归因 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="badcase">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap narrow">
+    <div class="eyebrow" style="margin-top:6px;">BAD CASE · ATTRIBUTION · TRACE</div>
+
+    <section class="section">
+      <div class="section-head"><h2>归因口径</h2><span class="sub">现象 → 机制 → 复现条件</span></div>
+      <div class="note">
+        每条 BadCase 只回答三件事：<strong>看到了什么</strong>、最可能由哪一层机制导致、在什么条件下能稳定复现。
+        本页是演示条目，不是真实统计；复现时保持同 prompt、同 seed / 初始帧，才能把“模型问题”和“采样偶然”分开。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Caption 标注 BadCase</h2><span class="sub">文字幻觉 · 运镜误判 · 维度混淆</span></div>
+      <table class="table badcase-table">
+        <colgroup><col style="width:34%"><col style="width:28%"><col style="width:24%"><col style="width:14%"></colgroup>
+        <thead><tr><th>现象</th><th>归因</th><th>复现条件</th><th>证据</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>画面里没有招牌文字，caption 却写“24 小时营业”</td>
+            <td>语言先验补全：低照度下先猜后看，没有逐帧核对</td>
+            <td>夜景 + 招牌小字 + 镜头运动</td>
+            <td>ts 00:02.1</td>
+          </tr>
+          <tr>
+            <td>手持横移被写成“推镜”</td>
+            <td>未区分相机位移与焦距变化；把画面变大当成变焦</td>
+            <td>快速横移 + 主体居中</td>
+            <td>ts 00:05.4</td>
+          </tr>
+          <tr>
+            <td>“色调”和“光影”打在同一档，理由也混着写</td>
+            <td>六维锚点边界不清；评分人把颜色和光位合并判断</td>
+            <td>混合色温 + 单光源</td>
+            <td>ts 00:07.8</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>T2V 评测 BadCase</h2><span class="sub">文字渲染 · 物理碰撞 · 镜头指令</span></div>
+      <table class="table badcase-table">
+        <colgroup><col style="width:34%"><col style="width:28%"><col style="width:24%"><col style="width:14%"></colgroup>
+        <thead><tr><th>现象</th><th>归因</th><th>复现条件</th><th>证据</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>第 3 秒招牌上的“24”变成“2A”</td>
+            <td>字形结构 + 运动模糊；文字渲染缺少字形约束</td>
+            <td>中文/数字小字 + 镜头推进 + 同 seed</td>
+            <td>ts 00:03.0</td>
+          </tr>
+          <tr>
+            <td>六个纸杯叠放，碰撞时没有倒塌或直接穿模</td>
+            <td>接触约束和刚体数量不足；只学到“像杯子”的外观</td>
+            <td>多物体堆叠 + 快速动作</td>
+            <td>ts 00:04.2</td>
+          </tr>
+          <tr>
+            <td>prompt 要求环绕，输出却是直线推进</td>
+            <td>相机轨迹与主体运动解耦；镜头指令被当成风格词</td>
+            <td>单主体 + 大场景 + 明确环绕</td>
+            <td>ts 00:02.6</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>世界模型评测 BadCase</h2><span class="sub">空间记忆 · 位姿稳定 · 碰撞体</span></div>
+      <table class="table badcase-table">
+        <colgroup><col style="width:34%"><col style="width:28%"><col style="width:24%"><col style="width:14%"></colgroup>
+        <thead><tr><th>现象</th><th>归因</th><th>复现条件</th><th>证据</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>绕桌一圈回到起点，桌上的杯子消失</td>
+            <td>状态未持久化；回访超出模型有效上下文窗口</td>
+            <td>绕行 &gt;20s + 回到同位姿</td>
+            <td>ts 00:24.0</td>
+          </tr>
+          <tr>
+            <td>180° 转身后视角漂移，桌子位置对不上</td>
+            <td>位姿积分误差累积；转身过程缺少关键帧锚定</td>
+            <td>连续转身 + 快速输入</td>
+            <td>ts 00:12.5</td>
+          </tr>
+          <tr>
+            <td>贴墙走时穿墙，跳跃后角色漂浮</td>
+            <td>碰撞体缺失；物理先验弱，只保证画面连贯</td>
+            <td>贴墙 + 跳跃 + 狭窄空间</td>
+            <td>ts 00:08.3</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>记录模板</h2><span class="sub">一条 BadCase 只落一个主因</span></div>
+      <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.65;">{
+  "case_id": "bc-t2v-001",
+  "track": "t2v",
+  "symptom": "第 3 秒招牌上的 24 变成 2A",
+  "dimension": "text_consistency",
+  "root_cause": "字形结构 + 运动模糊",
+  "repro": "中文小字 + 镜头推进 + 同 seed",
+  "evidence_ts": 3.0,
+  "severity": "major"
+}</pre>
+      <div class="note" style="margin-top:12px;">
+        <strong>分级：</strong><code>blocker</code> 直接不可用；<code>major</code> 影响任务完成；
+        <code>minor</code> 可看但出戏。归因层不写“模型不行”，只写可被下一次实验验证的机制。
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>BadCase · v1.0 · 2026-11</span>
+      <a href="method.html">回到方法与锚点 →</a>
+    </footer>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

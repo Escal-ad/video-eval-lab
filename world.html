@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>世界模型评测 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="world">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="workbench">
+      <aside class="col case-list">
+        <div class="queue-head"><h3>评测场景</h3><span class="count">2</span></div>
+        <div id="scene-list"></div>
+        <div style="margin-top:14px; display:grid; gap:8px;">
+          <a class="btn small" href="method.html" style="width:100%;">看评分锚点</a>
+
+        </div>
+      </aside>
+
+      <section class="col workspace">
+        <div class="stage-head">
+          <div>
+            <div class="stage-title" id="world-title">—</div>
+            <div class="stage-sub"><span id="world-action">—</span></div>
+          </div>
+          <span class="chip demo">World Model · 四维</span>
+        </div>
+
+        <div class="wb-modebar">
+          <div class="mode-switch" role="tablist" aria-label="评测模式">
+            <button class="mode-btn on" type="button" data-mode="ab">A/B 盲测</button>
+            <button class="mode-btn" type="button" data-mode="rubric">单模型 Rubric</button>
+          </div>
+          <span class="mode-note" id="mode-note">两侧独立 Rubric → 整体 A/B 单选 → 揭盲</span>
+        </div>
+
+        <div class="syncbar">
+          <div class="pair-controls" id="pair-controls">
+            <span class="pair-label">候选 1</span><select class="pair-select" id="pair-a" aria-label="候选 1"></select>
+            <span class="pair-label">候选 2</span><select class="pair-select" id="pair-b" aria-label="候选 2"></select>
+          </div>
+          <button class="btn small" id="sync-btn" type="button">对齐起点</button>
+          <span class="spacer"></span>
+          <span class="hint">同场景、同初始帧；只对齐动作</span>
+        </div>
+
+        <div class="note" style="margin-bottom:12px;">
+          <strong>预期：</strong><span id="world-expect">—</span>
+        </div>
+
+        <div class="world-grid" id="grid"></div>
+
+        <div style="margin-top:16px;">
+          <div class="section-head" style="margin-bottom:8px;">
+            <h2 style="font-size:14px;">同位姿对照</h2>
+            <span class="sub">去程记位姿，回程同位置截帧</span>
+          </div>
+          <div class="compare">
+            <div class="frame"><div><strong>去程 · 0s 基准帧</strong>布局 / 遮挡 / 光照基准</div></div>
+            <div class="frame"><div><strong>回程 · 同位置帧</strong>与左图逐项比对，标记差异</div></div>
+          </div>
+          <div class="hint" style="margin-top:6px;">真实使用时：两帧并排 + 差异框 + 时间戳；这是“记忆一致性”最硬的证据。</div>
+        </div>
+      </section>
+
+      <aside class="col panel">
+        <h3 id="model-title">评分</h3>
+        <div class="panel-sub" id="model-sub">选择任意模型开始</div>
+        <div id="dims"></div>
+
+        <div class="field">
+          <label for="latency">交互延迟（ms，实测）</label>
+          <input id="latency" placeholder="例如 180">
+        </div>
+
+        <div class="field">
+          <label for="effective">有效时长（s，画面开始崩之前）</label>
+          <input id="effective" placeholder="例如 42">
+        </div>
+
+        <div class="field">
+          <label for="evidence">证据时间戳</label>
+          <input id="evidence" placeholder="例如 00:06.2">
+        </div>
+
+        <div class="field">
+          <label for="reason">失败模式 / 备注</label>
+          <textarea id="reason" placeholder="例如：绕回起点时红色杯子消失；转身后地标左移。"></textarea>
+        </div>
+
+        <div class="vote-box hidden" id="vote-box">
+          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后揭盲</span></div>
+          <div class="vote-row">
+            <button class="vote-btn" type="button" data-vote="G">A 更好</button>
+            <button class="vote-btn" type="button" data-vote="S">持平</button>
+            <button class="vote-btn" type="button" data-vote="B">B 更好</button>
+          </div>
+          <button class="btn small ghost" type="button" id="reveal-btn" style="width:100%;margin-top:8px;">揭盲看 A/B</button>
+          <div class="vote-result" id="vote-result">两侧各 0/4 维</div>
+          <div class="vote-deltas" id="vote-deltas"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="save-btn" type="button">保存本模型评分</button>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/ab-workbench.js"></script>
+</body>
+</html>

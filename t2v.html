@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T2V 评测 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="t2v">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="workbench">
+      <aside class="col case-list">
+        <div class="queue-head"><h3>评测案例</h3><span class="count">2</span></div>
+        <div id="case-list"></div>
+        <div style="margin-top:14px;">
+          <a class="btn small" href="method.html" style="width:100%;">看评分锚点</a>
+        </div>
+      </aside>
+
+      <section class="col workspace">
+        <div class="stage-head">
+          <div>
+            <div class="stage-title" id="case-title">—</div>
+            <div class="stage-sub" id="case-prompt">—</div>
+          </div>
+          <span class="chip demo">T2V · 五维</span>
+        </div>
+
+        <div class="wb-modebar">
+          <div class="mode-switch" role="tablist" aria-label="评测模式">
+            <button class="mode-btn on" type="button" data-mode="ab">A/B 盲测</button>
+            <button class="mode-btn" type="button" data-mode="rubric">单模型 Rubric</button>
+          </div>
+          <span class="mode-note" id="mode-note">两侧独立 Rubric → 整体 A/B 单选 → 揭盲</span>
+        </div>
+
+        <div class="syncbar">
+          <label class="toggle" id="blind-label"><input type="checkbox" id="blind-toggle"> 盲评（隐藏模型名）</label>
+          <div class="pair-controls" id="pair-controls">
+            <span class="pair-label">候选 1</span><select class="pair-select" id="pair-a" aria-label="候选 1"></select>
+            <span class="pair-label">候选 2</span><select class="pair-select" id="pair-b" aria-label="候选 2"></select>
+          </div>
+          <button class="btn small" id="sync-btn" type="button">同步播放</button>
+          <span class="spacer"></span>
+          <span class="hint">同 prompt、同时长、同分辨率；只评视觉</span>
+        </div>
+
+        <div class="t2v-grid" id="grid"></div>
+
+        <div class="note" id="case-note" style="margin-top:14px;">
+          <strong>本组结论（揭盲后生成）：</strong>
+          <span id="case-conclusion">—</span>
+        </div>
+
+        <div class="note" id="ab-hint" style="margin-top:12px;">
+          <strong>盲测顺序：</strong>先分别给 A/B 打分（两侧独立，不互相参考），再投整体判断；投票后揭盲。A/B 标签随机绑定模型、卡片固定 A 左 B 右，结论只对应该组。
+        </div>
+      </section>
+
+      <aside class="col panel">
+        <h3 id="model-title">评分</h3>
+        <div class="panel-sub" id="model-sub">选择左侧任意模型开始</div>
+        <div id="dims"></div>
+
+        <div class="field">
+          <label for="evidence">证据时间戳</label>
+          <input id="evidence" placeholder="例如 00:02.1">
+        </div>
+
+        <div class="field">
+          <label for="reason">低分理由 / 失败模式</label>
+          <textarea id="reason" placeholder="例如：第 3 秒招牌文字从「24」变成「2A」；纸杯黏连未散开。"></textarea>
+        </div>
+
+        <div class="vote-box hidden" id="vote-box">
+          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后揭盲</span></div>
+          <div class="vote-row">
+            <button class="vote-btn" type="button" data-vote="G">A 更好</button>
+            <button class="vote-btn" type="button" data-vote="S">持平</button>
+            <button class="vote-btn" type="button" data-vote="B">B 更好</button>
+          </div>
+          <button class="btn small ghost" type="button" id="reveal-btn" style="width:100%;margin-top:8px;">揭盲看 A/B</button>
+          <div class="vote-result" id="vote-result">两侧各 0/5 维</div>
+          <div class="vote-deltas" id="vote-deltas"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="save-btn" type="button">保存本模型评分</button>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/ab-workbench.js"></script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-11-21",
+  "purpose": "Demo evaluation set for three interactive world models: Genie 4, Hy-Nomas, HappyOyster. N=2 case study, not a ranking.",
+  "protocol": {
+    "models": ["genie-4", "hy-nomas", "happy-oyster"],
+    "resolution": "720p or higher",
+    "aspect_ratio": "16:9",
+    "fps": "30 or 60",
+    "start_hold_sec": 2,
+    "end_hold_sec": 2,
+    "same_start_frame": true,
+    "same_prompt": true,
+    "no_audio_eval": true,
+    "file_pattern": "assets/world/<model-id>/<scene-id>.mp4"
+  },
+  "scenes": [
+    {
+      "id": "S02",
+      "name": "绕桌一圈回起点",
+      "priority": "core",
+      "category": "spatial_memory",
+      "start_frame_prompt": "一间普通室内房间，中央一张木桌，桌上左侧一个红色杯子、右侧一本合上的书；相机在桌子正前方约 1.5 米、高度 1.4 米，平视。自然光，画面干净，无人物。",
+      "prompt": "从桌子正面出发，沿桌子右侧绕行一圈，回到起点，最后面向桌子。",
+      "duration_sec": 20,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-8s", "do": "持续向右平移/右转，绕过桌子右侧" },
+        { "t": "8-12s", "do": "继续绕到桌子背面，保持桌子在画面内" },
+        { "t": "12-18s", "do": "回到起点，停住，面向桌子" },
+        { "t": "18-20s", "do": "不动" }
+      ],
+      "expected": [
+        "回到起点时红杯子和书的位置与初始一致",
+        "桌子遮挡关系正确",
+        "相机确实绕行一圈，不是原地转头或瞬移",
+        "回程没有重置、物体消失或桌面比例变化"
+      ],
+      "fail_modes": ["绕行中桌子消失", "红杯子变成两个", "回程切回初始帧", "相机穿墙"],
+      "dims": ["instruction", "physics", "camera", "memory"]
+    },
+    {
+      "id": "S05",
+      "name": "180 度转身",
+      "priority": "core",
+      "category": "consistency",
+      "start_frame_prompt": "一个开阔的广场，正前方有一座明显的钟楼，左侧一排矮树，右侧一栋红砖建筑；相机站在广场中央，平视钟楼，傍晚光线。",
+      "prompt": "原地转身 180 度，停 2 秒，再转回 180 度，回到面向钟楼的初始视角。",
+      "duration_sec": 12,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-5s", "do": "原地向右转 180 度" },
+        { "t": "5-7s", "do": "停住，观察背后场景" },
+        { "t": "7-10s", "do": "原地向左转 180 度，回到初始朝向" },
+        { "t": "10-12s", "do": "不动" }
+      ],
+      "expected": [
+        "背后场景合理，不是黑屏、贴图墙或正面重复",
+        "转回后钟楼、树、红砖建筑的相对位置不漂移",
+        "转身过程透视连续，无跳切",
+        "没有把转身做成镜头环绕"
+      ],
+      "fail_modes": ["转回后钟楼消失或换边", "背后场景与正面重复", "转身中途重置"],
+      "dims": ["instruction", "camera", "memory"]
+    },
+    {
+      "id": "S01",
+      "name": "走廊左转",
+      "priority": "optional",
+      "category": "instruction",
+      "start_frame_prompt": "一条狭长走廊，右侧有窗户，尽头左侧有一个路口；相机在走廊起点，平视前方。",
+      "prompt": "沿走廊向前走 4 秒，在第一个路口左转，然后停住。",
+      "duration_sec": 10,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-6s", "do": "向前直走" },
+        { "t": "6-8s", "do": "在第一个路口左转" },
+        { "t": "8-10s", "do": "停住" }
+      ],
+      "expected": ["在正确的路口左转", "走廊透视连续", "左转后不穿墙"],
+      "fail_modes": ["错过路口", "原地转圈", "穿墙"],
+      "dims": ["instruction", "camera"]
+    },
+    {
+      "id": "S03",
+      "name": "推球撞瓶",
+      "priority": "optional",
+      "category": "physics",
+      "start_frame_prompt": "一张矮桌，桌面左侧一个红球，正前方一个透明塑料瓶；相机在桌边，平视桌面。",
+      "prompt": "走向桌边的红球，把球推向前方的塑料瓶。",
+      "duration_sec": 10,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-5s", "do": "靠近红球" },
+        { "t": "5-8s", "do": "推动红球撞向塑料瓶" },
+        { "t": "8-10s", "do": "停住观察" }
+      ],
+      "expected": ["球滚动方向与推力一致", "瓶子被撞后合理倒下", "球和瓶不穿模"],
+      "fail_modes": ["球穿过瓶子", "瓶子无反应", "球黏在手上"],
+      "dims": ["physics", "instruction"]
+    },
+    {
+      "id": "S04",
+      "name": "走进水池",
+      "priority": "optional",
+      "category": "physics",
+      "start_frame_prompt": "一个浅水池，池边有石阶，水面平静；相机在池边，平视水面。",
+      "prompt": "从池边走进浅水池，水花溅起后停住。",
+      "duration_sec": 10,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-6s", "do": "向前走进水池" },
+        { "t": "6-8s", "do": "停在水里" },
+        { "t": "8-10s", "do": "不动" }
+      ],
+      "expected": ["脚入水时有水花", "水面有波纹", "身体与水面遮挡合理"],
+      "fail_modes": ["踩在水面上", "水花悬空", "穿模"],
+      "dims": ["physics", "camera"]
+    },
+    {
+      "id": "S06",
+      "name": "开门再关门",
+      "priority": "optional",
+      "category": "object_state",
+      "start_frame_prompt": "一扇木门，门把手在右侧，门后是一个亮着灯的客厅；相机站在门前。",
+      "prompt": "走到门边，推开门，走进去，再关上门。",
+      "duration_sec": 12,
+      "controls": [
+        { "t": "0-2s", "do": "不动" },
+        { "t": "2-5s", "do": "走到门边" },
+        { "t": "5-7s", "do": "推开门" },
+        { "t": "7-10s", "do": "走进客厅" },
+        { "t": "10-12s", "do": "转身关门" }
+      ],
+      "expected": ["门绕合页转动", "门后空间连续", "关门后门板复位"],
+      "fail_modes": ["门穿墙", "门把手消失", "关门后门板变形"],
+      "dims": ["physics", "memory", "instruction"]
+    }
+  ]
+}
