@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>评测维度 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* ===== dimensions page ===== */
+    .dc-card {
+      background: #fff;
+      border: 1px solid var(--line, #e4e7ec);
+      border-radius: 14px;
+      padding: 18px 20px 4px;
+      margin-bottom: 14px;
+    }
+    .dc-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+    .dc-num {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: #eef2ff; color: #4f46e5;
+      font-size: 12px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+    }
+    .dc-head h3 { margin: 0; font-size: 16.5px; letter-spacing: -.01em; }
+    .dc-head h3 em { font-style: normal; color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 6px; }
+    .dc-badge {
+      font-size: 11.5px; padding: 1px 8px; border-radius: 20px;
+      border: 1px solid var(--line, #e4e7ec); color: var(--muted);
+    }
+    .dc-badge.gate { border-color: #fda29b; color: #b42318; background: #fef3f2; }
+    .dc-def { margin: 9px 0 2px; font-size: 14px; line-height: 1.75; }
+    .dc-def b { font-weight: 600; }
+    .dc-not { margin: 2px 0 12px; font-size: 12.5px; color: var(--muted); }
+    .dc-obs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px 22px;
+      margin: 0 0 14px;
+    }
+    .dc-obs div { font-size: 13px; color: #475467; }
+    .dc-obs b { color: var(--ink); font-weight: 600; }
+    .dc-card .table.anchor { margin-bottom: 12px; }
+    .dc-card .table.anchor td:first-child {
+      width: 48px; font-family: var(--mono); color: var(--muted); font-size: 12px;
+    }
+    .dc-card .table.anchor td { font-size: 12.5px; }
+    .dc-hint {
+      margin: 0 -20px; padding: 9px 20px;
+      border-top: 1px solid var(--line, #e4e7ec);
+      background: #fcfcfd; color: var(--muted); font-size: 12.5px;
+      border-radius: 0 0 14px 14px;
+    }
+    @media (max-width: 760px) {
+      .dc-obs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="dims">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">评测方法</a>
+        <a data-page="dims" href="dims.html">评测维度</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap narrow">
+    <div class="eyebrow" style="margin-top:6px;">DIMENSIONS · OBSERVATION · ANCHOR</div>
+
+    <section class="section">
+      <div class="section-head"><h2>Caption 六维选项</h2><span class="sub">单选 · 可留空 · 不猜</span></div>
+      <table class="table anchor">
+        <colgroup><col style="width:18%"><col style="width:82%"></colgroup>
+        <thead><tr><th>维度</th><th>常用选项</th></tr></thead>
+        <tbody>
+          <tr><td>色调</td><td>暖调 / 冷调 / 中性 / 高饱和 / 低饱和</td></tr>
+          <tr><td>拍摄角度</td><td>平视 / 俯拍 / 仰拍 / 侧拍 / 顶拍</td></tr>
+          <tr><td>构图</td><td>三分法 / 中心构图 / 对称构图 / 对角线 / 框架构图</td></tr>
+          <tr><td>光影</td><td>顺光 / 侧光 / 逆光 / 顶光 / 底光</td></tr>
+          <tr><td>景别</td><td>远景 / 全景 / 中景 / 近景 / 特写</td></tr>
+          <tr><td>运镜</td><td>固定 / 推 / 拉 / 摇 / 移</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>T2V 五维</h2><span class="sub">绝对分 · 1 / 3 / 5 三档</span></div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">1</span><h3>文本一致性<em>Text Fidelity</em></h3></div>
+        <p class="dc-def"><b>定义：</b>prompt 里写到的元素是否都在画面里，且属性、数量、空间关系、动作都对。</p>
+        <p class="dc-not">不管：画面好不好看。</p>
+        <div class="dc-obs">
+          <div><b>主体</b>：人/物是否存在、是否被替换</div>
+          <div><b>属性</b>：颜色、材质、服装、文字内容</div>
+          <div><b>数量与位置</b>：三枚硬币是不是三枚，在不在桌上</div>
+          <div><b>动作</b>：有没有执行 prompt 指定的动作</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>关键元素缺失或错位（写「24 小时」生成「2A」）</td></tr>
+            <tr><td>3</td><td>大意对，但有细节错</td></tr>
+            <tr><td>5</td><td>主体、属性、关系、动作全对</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：只看「有没有出现」，不看数量与位置——三枚硬币生成五枚，仍算不一致。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">2</span><h3>画质<em>Quality</em></h3></div>
+        <p class="dc-def"><b>定义：</b>单帧的清晰度、噪声、压缩伪影与细节可辨识度。</p>
+        <p class="dc-not">不管：构图与色彩（那是单帧美学）。</p>
+        <div class="dc-obs">
+          <div><b>锐度</b>：边缘、毛发、布料纹理是否清楚</div>
+          <div><b>噪声与块状</b>：暗部噪点、压缩块、色带</div>
+          <div><b>文字可读</b>：招牌上的小字能否认出</div>
+          <div><b>细节一致性</b>：同一物体在不同帧的清晰度是否稳定</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>糊、噪、压缩严重，细节不可辨</td></tr>
+            <tr><td>3</td><td>可用，细节一般</td></tr>
+            <tr><td>5</td><td>细节清晰、无明显伪影</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：把「画面元素少」当成糊——先看细节处（文字、发丝）是否可辨。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">3</span><h3>结构稳定性<em>Structure</em></h3></div>
+        <p class="dc-def"><b>定义：</b>主体与场景在时间轴上是否保持同一形状与拓扑，不发生变形、融化、多肢。</p>
+        <p class="dc-not">不管：画面是否抖动（那是运动效果）。</p>
+        <div class="dc-obs">
+          <div><b>主体轮廓</b>：人脸、器物边缘是否随时间走形</div>
+          <div><b>肢体与手</b>：手指数量、关节连接是否崩坏</div>
+          <div><b>背景结构</b>：建筑、栏杆、文字是否漂移或重绘</div>
+          <div><b>物体持续性</b>：中途是否凭空多出/少掉物件</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>主体变形、多肢、融化</td></tr>
+            <tr><td>3</td><td>轻微漂移</td></tr>
+            <tr><td>5</td><td>全程稳定，首尾都是同一个东西</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：把「正常的手部运动」当成崩坏——要看的是拓扑有没有变（多指、错位）。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">4</span><h3>运动效果<em>Motion</em></h3></div>
+        <p class="dc-def"><b>定义：</b>画面内的运动是否连贯、符合物理、节奏合理，以及镜头运动是否平滑。</p>
+        <p class="dc-not">不管：运动是否符合 prompt（那是文本一致性）。</p>
+        <div class="dc-obs">
+          <div><b>连贯性</b>：有无卡顿、跳帧、突跳</div>
+          <div><b>物理性</b>：液体、布料、碰撞是否合理</div>
+          <div><b>节奏</b>：动作快慢是否与描述相符</div>
+          <div><b>镜头</b>：推拉摇移是否平滑、无抖动</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>卡顿、跳变、明显物理错误</td></tr>
+            <tr><td>3</td><td>基本连贯</td></tr>
+            <tr><td>5</td><td>符合物理，节奏自然</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：把「动作慢」当成不连贯——连贯看的是相邻帧之间有没有断。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">5</span><h3>单帧美学<em>Aesthetics</em></h3></div>
+        <p class="dc-def"><b>定义：</b>抽出一帧，是否具备可用的构图、色彩与光影——简单说，能不能当封面。</p>
+        <p class="dc-not">不管：动态过程的连贯（那是运动效果）。</p>
+        <div class="dc-obs">
+          <div><b>构图</b>：主体位置、留白、视觉重心</div>
+          <div><b>色彩</b>：色调统一、不发灰不发脏</div>
+          <div><b>光影</b>：明暗层次、光源可信度</div>
+          <div><b>可用性</b>：是否可作封面/海报</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>构图/色彩差，像随手截帧</td></tr>
+            <tr><td>3</td><td>一般，无功无过</td></tr>
+            <tr><td>5</td><td>可作封面</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：用「像不像大片」当标准——这一维只问能不能用，不问艺术性。</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>世界模型四维</h2><span class="sub">绝对分 · 1 / 3 / 5 三档 · 能力缺失记 N/A</span></div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">1</span><h3>指令遵循<em>Instruction</em></h3><span class="dc-badge gate">门槛维</span></div>
+        <p class="dc-def"><b>定义：</b>模型是否按给定指令改变了世界状态与镜头——动作有没有发生、顺序对不对、方向和幅度是否达标。</p>
+        <p class="dc-not">不管：画面好不好看、镜头顺不顺滑（那是画质与相机）。</p>
+        <div class="dc-obs">
+          <div><b>发生</b>：要求的动作（前进/转身/停下）是否出现</div>
+          <div><b>顺序</b>：多个动作的先后是否与脚本一致</div>
+          <div><b>方向</b>：左右、抬头低头有没有做反</div>
+          <div><b>幅度</b>：要求的 180° / 2 秒位移，实际差多少</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>指令里的动作根本没发生，或方向相反（让它前进它后退）</td></tr>
+            <tr><td>3</td><td>动作发生了，但顺序错、或幅度明显不足（要 180° 只转了 90°），或中途被生成带偏</td></tr>
+            <tr><td>5</td><td>动作序列、方向、幅度都能与脚本逐条对上</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">过了这一维才看后三维；没过的用「没执行，无从观察」记 N/A，而不是打 1 分。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">2</span><h3>物理合理性<em>Physics</em></h3></div>
+        <p class="dc-def"><b>定义：</b>世界里的物体是否遵守重力、接触、碰撞与流体的基本规律，且材质表现自洽。</p>
+        <p class="dc-not">不管：风格是否写实。梵高笔触、油画质感不是物理错误。</p>
+        <div class="dc-obs">
+          <div><b>几何</b>：穿模、悬空、物体互相插入</div>
+          <div><b>接触与支撑</b>：脚有没有踩实，影子/倒影方向是否一致</div>
+          <div><b>材质</b>：布料、水面、玻璃的反射是否符合材质直觉</div>
+          <div><b>流体与形变</b>：牛奶倾倒、烟雾、帆布受风是否连续合理</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>明显穿模/悬浮/反重力，物体凭空出现或消失</td></tr>
+            <tr><td>3</td><td>有小瑕疵（轻微穿插、影子偏移、液体断连），但主体动作仍成立</td></tr>
+            <tr><td>5</td><td>碰撞、重力、材质自洽，接近真实拍摄的观感</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">常见误判：把「看起来不真实」和「物理错了」混为一谈——超现实场景本身不违规，违规的是违反它自己建立的规则。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">3</span><h3>相机控制<em>Camera</em></h3></div>
+        <p class="dc-def"><b>定义：</b>镜头是否按指令移动或转向，并在运动过程中保持正确的视差与透视——而不是被模型自己的生成惯性带走。</p>
+        <p class="dc-not">不管：构图美不美、运镜是否有电影感。</p>
+        <div class="dc-obs">
+          <div><b>响应</b>：给了方向键/指令，视角有没有动</div>
+          <div><b>轴向</b>：左右转、抬头低头是否与按键一致</div>
+          <div><b>终点误差</b>：要 180° 实际转了多少，要前进 2 秒实际走了多远</div>
+          <div><b>漂移</b>：松手静止后，画面是否仍在缓慢滑动</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>视角失控：不响应、反向，或完全不受按键约束</td></tr>
+            <tr><td>3</td><td>能转向，但幅度不准、或停下后持续漂移</td></tr>
+            <tr><td>5</td><td>方向、幅度、终点都对；静止时画面稳定不漂</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">固定机位素材没有可评的镜头运动，这一维应记 N/A，而不是打 3 分。</p>
+      </div>
+
+      <div class="dc-card">
+        <div class="dc-head"><span class="dc-num">4</span><h3>记忆一致性<em>Memory</em></h3></div>
+        <p class="dc-def"><b>定义：</b>视角离开再回到同一位置时，场景布局、物体状态与光照是否与离开前一致。</p>
+        <p class="dc-not">不管：新区域生成得好不好。也注意：没回到起点是导航失败，不算记忆差。</p>
+        <div class="dc-obs">
+          <div><b>布局</b>：建筑、家具的位置、数量、遮挡关系</div>
+          <div><b>物体状态</b>：被移动、打开、倒下的物体是否保持</div>
+          <div><b>光照</b>：光源方向、色温、阴影是否一致</div>
+          <div><b>细节纹理</b>：墙面的字、贴图、装饰是否被重新生成</div>
+        </div>
+        <table class="table anchor">
+          <tbody>
+            <tr><td>1</td><td>回到原位后场景被重置：建筑换位置、物体消失</td></tr>
+            <tr><td>3</td><td>大体保留，但细节变了（门窗位置、物体数量、光照突变）</td></tr>
+            <tr><td>5</td><td>同位姿下布局/遮挡/光照一致，只剩轻微噪声差异</td></tr>
+          </tbody>
+        </table>
+        <p class="dc-hint">前提：起点与终点必须同位置、同朝向。位姿对不上，差异就不能记在记忆头上。</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Dimensions · v1.0 · 2026-11</span>
+      <a href="method.html">回到评测方法 →</a>
+    </footer>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

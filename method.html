@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>方法 — 评估工作台</title>
+  <title>评测方法 — 评估工作台</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="method">
@@ -15,7 +15,8 @@
         <a data-page="t2v" href="t2v.html">T2V 评测</a>
         <a data-page="world" href="world.html">世界模型评测</a>
         <a data-page="rag" href="rag.html">法律 RAG</a>
-        <a data-page="method" href="method.html">方法</a>
+        <a data-page="method" href="method.html">评测方法</a>
+        <a data-page="dims" href="dims.html">评测维度</a>
         <a data-page="data" href="data.html">数据</a>
         <a data-page="badcase" href="badcase.html">BadCase 归因</a>
       </nav>
@@ -27,7 +28,7 @@
   </header>
 
   <main class="wrap narrow">
-    <div class="eyebrow" style="margin-top:6px;">STRUCTURE · METHOD · ANCHOR</div>
+    <div class="eyebrow" style="margin-top:6px;">STRUCTURE · GSB · RUBRIC</div>
 
     <section class="section">
       <div class="section-head"><h2>三层结构</h2><span class="sub">标注层 → 评测层 → 归因层</span></div>
@@ -89,54 +90,9 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head"><h2>Caption 六维选项</h2><span>单选 · 可留空 · 不猜</span></div>
-      <table class="table anchor">
-        <colgroup><col style="width:18%"><col style="width:82%"></colgroup>
-        <thead><tr><th>维度</th><th>常用选项</th></tr></thead>
-        <tbody>
-          <tr><td>色调</td><td>暖调 / 冷调 / 中性 / 高饱和 / 低饱和</td></tr>
-          <tr><td>拍摄角度</td><td>平视 / 俯拍 / 仰拍 / 侧拍 / 顶拍</td></tr>
-          <tr><td>构图</td><td>三分法 / 中心构图 / 对称构图 / 对角线 / 框架构图</td></tr>
-          <tr><td>光影</td><td>顺光 / 侧光 / 逆光 / 顶光 / 底光</td></tr>
-          <tr><td>景别</td><td>远景 / 全景 / 中景 / 近景 / 特写</td></tr>
-          <tr><td>运镜</td><td>固定 / 推 / 拉 / 摇 / 移</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="section">
-      <div class="section-head"><h2>T2V 五维锚点</h2></div>
-      <table class="table anchor">
-        <colgroup><col style="width:16%"><col style="width:26%"><col style="width:28%"><col style="width:30%"></colgroup>
-        <thead><tr><th>维度</th><th>1 分</th><th>3 分</th><th>5 分</th></tr></thead>
-        <tbody>
-          <tr><td>文本一致性</td><td>关键元素缺失或错位</td><td>大意对，有细节错</td><td>主体、属性、关系全对</td></tr>
-          <tr><td>画质</td><td>糊、噪、压缩严重</td><td>可用，细节一般</td><td>细节清晰，无明显伪影</td></tr>
-          <tr><td>结构稳定性</td><td>主体变形、多肢、融化</td><td>轻微漂移</td><td>全程稳定</td></tr>
-          <tr><td>运动效果</td><td>卡顿、跳变、物理错误</td><td>基本连贯</td><td>符合物理，节奏自然</td></tr>
-          <tr><td>单帧美学</td><td>构图/色彩差</td><td>一般</td><td>可作封面</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="section">
-      <div class="section-head"><h2>世界模型四维锚点</h2></div>
-      <table class="table anchor">
-        <colgroup><col style="width:16%"><col style="width:26%"><col style="width:28%"><col style="width:30%"></colgroup>
-        <thead><tr><th>维度</th><th>1 分</th><th>3 分</th><th>5 分</th></tr></thead>
-        <tbody>
-          <tr><td>指令遵循</td><td>不响应或反向</td><td>部分响应</td><td>准确执行动作序列</td></tr>
-          <tr><td>物理合理性</td><td>穿模、漂浮、无碰撞</td><td>小瑕疵</td><td>碰撞、重力、材质合理</td></tr>
-          <tr><td>相机控制</td><td>视角失控</td><td>可转向但漂移</td><td>稳定，视差正确</td></tr>
-          <tr><td>记忆一致性</td><td>场景重置、物体消失</td><td>部分保留</td><td>同位姿布局/遮挡/光照一致</td></tr>
-        </tbody>
-      </table>
-    </section>
-
     <footer class="footer">
-      <span>Method · v1.0 · 2026-11</span>
-      <a href="index.html">回到 Caption 标注 →</a>
+      <span>Method · v1.1 · 2026-11</span>
+      <a href="dims.html">看每个维度的定义与观察点 →</a>
     </footer>
   </main>
 
