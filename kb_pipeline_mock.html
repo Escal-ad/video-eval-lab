@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>知识库搭建逻辑 · 简版</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --line:#e3e8f0; --accent:#2563eb;
+    --green:#0f9d58; --red:#dc2626; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;width:1500px;padding:44px 44px 34px;background:#f4f6fa;color:var(--ink);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+  h1{margin:9px 0 0;font-size:34px;line-height:1.18;letter-spacing:-.02em}
+  .sub{margin:8px 0 0;font-size:13px;color:var(--muted)}
+  .top-chips{position:absolute;top:48px;right:44px;display:flex;gap:8px}
+  .chip{font-size:11.5px;color:#334155;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  .chip b{color:var(--accent)}
+
+  .pipe{display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr 24px 1fr 24px 1fr;align-items:stretch;margin-top:24px}
+  .node{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 15px 13px}
+  .node .ic{width:34px;height:34px;border-radius:9px;background:#eef2ff;color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .node strong{display:block;margin-top:9px;font-size:14.5px}
+  .node span{display:block;margin-top:3px;font-size:11.8px;color:var(--muted);line-height:1.5}
+  .arrow{display:flex;align-items:center;justify-content:center;color:#b8c2d4;font-size:15px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px 14px;display:flex;gap:13px}
+  .panel .ic{flex:0 0 auto;width:38px;height:38px;border-radius:10px;background:#eef2ff;color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .body{min-width:0}
+  .body h3{margin:0;font-size:14.5px;letter-spacing:-.01em}
+  .body h3 em{font-style:normal;color:var(--muted);font-weight:500;font-size:12px;margin-left:6px}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .pill{font-size:11.8px;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:3px 9px;color:#334155}
+  .pill.y{border-color:#c7ebd6;background:#f2fbf6;color:#0b7a45}
+  .pill.n{border-color:#f5d0d0;background:#fdf4f4;color:#b42318}
+  .pill b{font-family:var(--mono)}
+  .oneline{margin:9px 0 0;font-size:12px;color:var(--muted)}
+  .oneline b{color:#334155}
+  .rows{margin-top:9px}
+  .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px dashed #eef2f7}
+  .row:last-child{border-bottom:0}
+  .row .st{font-weight:700;font-size:11.5px}
+  .st.no{color:var(--red)}
+  .st.yes{color:var(--green)}
+  .foot{display:flex;justify-content:space-between;margin-top:16px;font-size:11.8px;color:var(--muted)}
+</style>
+<style>
+  .node strong{font-size:15.5px}
+  .node span{font-size:12.6px}
+  .body h3{font-size:15.5px}
+  .body h3 em{font-size:12.6px}
+  .pill{font-size:12.6px}
+  .oneline{font-size:12.8px}
+  .row{font-size:12.8px}
+  .sub{font-size:13.5px}
+  .foot{font-size:12.2px}
+</style>
+</head>
+<body>
+  <div class="top-chips">
+    <span class="chip"><b>4</b> 部法</span>
+    <span class="chip"><b>777</b> 块</span>
+    <span class="chip">一套库 · 四种检索配置</span>
+  </div>
+
+  <div class="eyebrow">知识库 · 搭建逻辑</div>
+  <h1>4 部法 → 777 块</h1>
+  <p class="sub">每个方块是一个必须自己拍板的决策，不是 Dify 的默认值。</p>
+
+  <div class="pipe">
+    <div class="node">
+      <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M8 4v16"/></svg></div>
+      <strong>数据源</strong><span>只要官方全文</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><path d="M8 7.5 20 18"/><path d="M8 16.5 20 6"/></svg></div>
+      <strong>切分</strong><span>按「条」，不按字数</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l9 9-8 8-9-9Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></div>
+      <strong>元数据</strong><span>法名 · 条号 · 版本</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg></div>
+      <strong>索引</strong><span>向量 + 全文，两套</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 21 21"/></svg></div>
+      <strong>检索</strong><span>混合 + 重排</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M8 4v16"/></svg></div>
+      <div class="body">
+        <h3>数据源<em>宁少勿杂</em></h3>
+        <div class="pills">
+          <span class="pill y">✓ 4 部官方全文</span>
+          <span class="pill n">✗ 判例 · 解读帖</span>
+        </div>
+        <p class="oneline"><b>777 块，块块能追回条号。</b></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><path d="M8 7.5 20 18"/><path d="M8 16.5 20 6"/></svg></div>
+      <div class="body">
+        <h3>切分<em>切错，补不回来</em></h3>
+        <div class="pills">
+          <span class="pill">固定长度 · 基线</span>
+          <span class="pill y">按条 · 主方案</span>
+          <span class="pill">父子 · 长条</span>
+        </div>
+        <p class="oneline">切分定上限，检索只在上限里挑。</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></svg></div>
+      <div class="body">
+        <h3>Embedding<em>不是必选</em></h3>
+        <div class="rows">
+          <div class="row"><span>纯 BM25 / 全文</span><span class="st no">不建</span></div>
+          <div class="row"><span>纯向量</span><span class="st yes">建</span></div>
+          <div class="row"><span>混合 + 重排</span><span class="st yes">两套都建</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 21 21"/></svg></div>
+      <div class="body">
+        <h3>检索<em>重排不是默认加分</em></h3>
+        <div class="pills">
+          <span class="pill">A 向量 <b>4/9</b></span>
+          <span class="pill n">B 全文 <b>0/9</b></span>
+          <span class="pill">C 混合 <b>4/9</b></span>
+          <span class="pill">D +重排 <b>2/9</b></span>
+        </div>
+        <p class="oneline">B 的 0 条是<b>查询分词</b>，不是库没建好。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>数据源定边界 · 切分定上限 · 索引定召回 · 检索只做取舍</span>
+    <span>n=9 只验链路，不作排名</span>
+  </div>
+</body>
+</html>
