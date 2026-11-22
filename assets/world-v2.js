@@ -22,6 +22,14 @@
     { key: "memory", name: "记忆一致性", why: "回访位置是否复原" },
   ];
 
+  // 三档量表：1/3/5 各有锚点，2/4 无定义 → 评分者自由发挥，属噪声。
+  const SCALE = [1, 3, 5];
+  const SCALE_HINT = {
+    1: "1 分 · 明显不成立（锚点见方法页）",
+    3: "3 分 · 部分成立 / 有明显但非致命的缺陷",
+    5: "5 分 · 完全成立（锚点见方法页）",
+  };
+
   const NA_REASONS = [
     "不具备该能力",
     "范式不同（引擎辅助 / 非生成）",
@@ -281,7 +289,7 @@
       : "评分：" + m.name;
     $("#model-sub").textContent = isAb()
       ? "点 A/B 切换评分侧；两侧都评完再揭盲"
-      : "单个模型绝对分，1–5，不参与 GSB";
+      : "单个模型绝对分，1/3/5 三档，不参与 GSB";
 
     $("#dims").innerHTML = DIMS.map((d) => {
       const v = c.dims[d.key];
@@ -290,7 +298,7 @@
       return `<div class="dim ${na ? "na-on" : ""}" data-dim="${d.key}">
         <div class="dim-head"><strong>${esc(d.name)}</strong><span class="why">${esc(d.why)}</span></div>
         <div class="score-row">
-          ${[1, 2, 3, 4, 5].map((n) => `<button class="score-btn ${v === n ? "on" : ""}" type="button" data-val="${n}">${n}</button>`).join("")}
+          ${SCALE.map((n) => `<button class="score-btn ${v === n ? "on" : ""}" type="button" data-val="${n}" title="${SCALE_HINT[n]}">${n}</button>`).join("")}
           <button class="na-btn ${na ? "on" : ""}" type="button" data-na="1" title="这一维对该模型不成立">N/A</button>
         </div>
         ${na ? `<div class="na-reason"><select data-reason="1">${NA_REASONS.map((r) => `<option ${r === na ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></div>` : ""}

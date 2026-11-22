@@ -20,7 +20,7 @@
         <a data-page="badcase" href="badcase.html">BadCase 归因</a>
       </nav>
       <div class="top-actions">
-        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
+
         <button class="icon-btn" data-export>导出</button>
       </div>
     </div>
@@ -34,7 +34,7 @@
       <div class="method-grid three">
         <div class="method-card">
           <h3>1. 标注层</h3>
-          <p>把“感觉”拆成可复述的判据：六维 caption 选项、五维 T2V、四维世界模型。Caption 选标签，T2V / 世界模型每维 1–5 分。</p>
+          <p>把“感觉”拆成可复述的判据：六维 caption 选项、五维 T2V、四维世界模型。Caption 选标签，T2V / 世界模型每维 1 / 3 / 5 三档。</p>
           <ul>
             <li>低分必须写理由，理由必须带时间戳</li>
             <li>没看清就留空，不猜</li>
@@ -70,7 +70,7 @@
           <li>A/B 标签随机绑定模型，卡片固定 A 左 B 右；先各自独立看，再投票。</li>
           <li>整体投 G（A 更好）、S（持平）、B（B 更好）；分维度胜负由两侧 Rubric 差值自动生成（差值 ≥1 记为胜）。</li>
           <li>投票后揭盲；整体净胜率按任务拆，维度归因看 Rubric 差值，不把单案例当排名。</li>
-          <li>工作台演示：两侧各 1–5 分 → 整体单选 → 揭盲；分维度票不额外点击，避免重复劳动。</li>
+          <li>工作台演示：两侧各打 1/3/5 → 整体单选 → 揭盲；分维度票不额外点击，避免重复劳动。</li>
           <li>版本对比同 seed、同初始帧，只换版本；落后维度归因到具体失败模式，输出带时间戳清单。</li>
         </ul>
         <div class="formula">净胜率 = (G − B) / N<br>去平局胜率 = G / (G + B)</div>
@@ -78,10 +78,13 @@
     </section>
 
     <section class="section" id="rubric">
-      <div class="section-head"><h2>Rubric 评分</h2><span class="sub">绝对分 · 1–5 锚点</span></div>
+      <div class="section-head"><h2>Rubric 评分</h2><span class="sub">绝对分 · 1 / 3 / 5 三档</span></div>
       <div class="method-card">
         <p>Rubric 回答“这条片子本身几分”，适合验收、定位失败维度；GSB 回答“新版本有没有比旧版本好”，适合迭代决策。</p>
         <p>两个都要：先用 Rubric 找到失败维度，再用 GSB 判断版本胜负。只做 GSB 会丢掉绝对质量，只做 Rubric 看不出相对提升。</p>
+        <p>量表用 <strong>1 / 3 / 5 三档</strong>，不用 1–5 五档。理由是可复核：这三维的锚点表只写了 1、3、5 三行的判据，2 分和 4 分没有定义。没有定义的档位，评分者会各自发明标准——同一段视频两个人能打出一分之差，却拿不出可以争论的依据，这一分之差是噪声，不是信号。</p>
+        <p>公开资料也不支持五档：我们查了 Hy-Nomas 与 WorldMark 两条线。Hy-Nomas 的论文只写“human evaluation 中优于现有模型”，没有披露量表；WorldMark 走的是 9 个确定性指标归一化到 0–100，不是人工打分。也就是说，目前没有可以照抄的公开五档人工量表，自建三档再加锚点，比抄一个没定义的五档更站得住。</p>
+        <p>三档的代价是分辨率下降：2.5 和 3.5 这种差异会被压平。所以维度之间不做精细排序，只做“成立 / 部分成立 / 不成立”的判断；需要看细腻差异时，用 GSB 的相对胜负和证据时间戳补，而不是把 1–5 的刻度硬拆回来。能力缺失的格子记 N/A，不要用 1 分代替。</p>
         <p>N=2 时只展示单案例投票；净胜率需要同条件的多对样本，并注明模型版本、日期和采样条件。</p>
       </div>
     </section>

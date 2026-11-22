@@ -132,7 +132,7 @@
       $("#case-note").classList.toggle("hidden", state.mode === "ab");
       $("#mode-note").textContent = state.mode === "ab"
         ? "两侧独立 Rubric → A/B 随机绑定 → 整体单选 → 揭盲"
-        : "逐模型 1–5 分；可开盲评隐藏模型名";
+        : "逐模型 1/3/5 三档；可开盲评隐藏模型名";
     }
 
     function renderPairSelects() {
@@ -499,7 +499,7 @@
       if (hint) hint.classList.toggle("hidden", state.mode !== "ab");
       $("#mode-note").textContent = state.mode === "ab"
         ? "两侧独立 Rubric → A/B 随机绑定 → 整体单选 → 揭盲"
-        : "逐模型 1–5 分；延迟与有效时长单列";
+        : "逐模型 1/3/5 三档；延迟与有效时长单列";
       $("#grid").classList.toggle("two-col", state.mode === "ab");
     }
 

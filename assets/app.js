@@ -6,6 +6,15 @@
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
+  // 三档量表：只有 1/3/5 有锚点定义。2/4 无锚点时评分者会各自发明标准，
+  // 同一段视频两个人能打出一分之差却没有可争论的依据，属于纯噪声。
+  const SCALE = [1, 3, 5];
+  const SCALE_HINT = {
+    1: "1 分 · 明显不成立（锚点见方法页）",
+    3: "3 分 · 部分成立 / 有明显但非致命的缺陷",
+    5: "5 分 · 完全成立（锚点见方法页）"
+  };
+
   const DATA = {
     captionTasks: [
       {
@@ -189,7 +198,7 @@
             ${d.options.map(o => `<option value="${o}" ${current === o ? "selected" : ""}>${o}</option>`).join("")}
           </select>`
         : `<div class="score-row" data-dim="${d.key}">
-            ${[1,2,3,4,5].map(n => `<button class="score-btn ${current === n ? "on" : ""}" data-score="${n}" data-dim="${d.key}" type="button">${n}</button>`).join("")}
+            ${SCALE.map(n => `<button class="score-btn ${current === n ? "on" : ""}" data-score="${n}" data-dim="${d.key}" type="button" title="${SCALE_HINT[n]}">${n}</button>`).join("")}
           </div>`;
       return `
       <div class="dim">
