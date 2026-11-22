@@ -203,7 +203,7 @@
       return `
       <div class="dim">
         <div class="dim-head">
-          <strong>${d.label}</strong>
+          <strong>${d.label}</strong>${(window.VELAB_TIPS && window.VELAB_TIPS[d.key]) ? `<button class="q" type="button" data-tip="${d.key}" aria-label="维度说明" title="看定义与观察点">?</button>` : ""}
           <span class="why">${d.hint || ""}</span>
         </div>
         ${control}

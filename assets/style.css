@@ -535,3 +535,45 @@ code, .mono { font-family: var(--mono); }
 
 /* keep case pill on one line */
 .chip, .wb-head .tag, .case-head .tag, .badge { white-space: nowrap; }
+
+/* ===== dimension tooltip (light) ===== */
+.dim-head .q, .dim-head button.q {
+  width: 15px; height: 15px; border-radius: 50%; flex: none;
+  border: 1px solid #d5e2f7; background: #fbfcff; color: #7a99cf;
+  font-size: 10px; line-height: 1; font-weight: 600; cursor: pointer;
+  display: grid; place-items: center; padding: 0; transition: all .12s;
+}
+.dim-head .q:hover { border-color: #b9cff0; background: #f2f7ff; color: #3f6fc4; }
+.dim-head .q.on { border-color: #a8c4f8; background: #edf4ff; color: #2f62b8; }
+
+.tip {
+  position: fixed; z-index: 300; width: 344px; max-width: calc(100vw - 20px);
+  background: #fff; border: 1px solid #eaecf0; border-left: 2px solid #b9cff0;
+  border-radius: 8px; padding: 11px 13px 12px;
+  box-shadow: 0 10px 24px rgba(16,24,40,.10);
+  font-size: 11.5px; line-height: 1.62; color: #475467; text-align: left;
+}
+.tip-h { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.tip-h b { font-size: 12.5px; color: #101828; }
+.tip-h i { font-style: normal; font-size: 10.5px; color: #98a2b3; }
+.tip-gate {
+  margin-left: auto; font-size: 9.5px; color: #3f6fc4; background: #f2f7ff;
+  border: 1px solid #dbe8fb; border-radius: 999px; padding: 1px 7px;
+}
+.tip-lb { font-size: 10px; font-weight: 600; letter-spacing: .05em; color: #7a93b8; margin: 8px 0 2px; }
+.tip-lb:first-of-type { margin-top: 0; }
+.tip p { margin: 0; color: #344054; }
+.tip .tip-muted { color: #98a2b3; margin-top: 2px; }
+.tip-ul { margin: 0; padding-left: 15px; color: #344054; }
+.tip-ul li { margin: 0 0 1px; }
+.tip-anc { display: flex; gap: 7px; align-items: baseline; margin-top: 3px; color: #344054; }
+.tip-anc em {
+  font-style: normal; flex: none; width: 15px; height: 15px; border-radius: 4px;
+  background: #f4f7ff; color: #4a7bd8; font-size: 10px; font-weight: 600;
+  display: grid; place-items: center;
+}
+.tip-warn {
+  margin-top: 9px; padding: 6px 8px; border-radius: 6px;
+  background: #fff8f6; color: #b5473b; font-size: 11px;
+}
+@media (max-width: 520px) { .tip { width: calc(100vw - 20px); } }

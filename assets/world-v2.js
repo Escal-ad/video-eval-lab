@@ -350,7 +350,7 @@
       const na = c.na[d.key];
       const preset = baseNa[d.key] && baseNa[d.key] === na;
       return `<div class="dim ${na ? "na-on" : ""}" data-dim="${d.key}">
-        <div class="dim-head"><strong>${esc(d.name)}</strong><span class="why">${esc(d.why)}</span></div>
+        <div class="dim-head"><strong>${esc(d.name)}</strong>${(window.VELAB_TIPS && window.VELAB_TIPS[d.key]) ? `<button class="q" type="button" data-tip="${d.key}" aria-label="维度说明" title="看定义与观察点">?</button>` : ""}<span class="why">${esc(d.why)}</span></div>
         <div class="score-row">
           ${SCALE.map((n) => `<button class="score-btn ${v === n ? "on" : ""}" type="button" data-val="${n}" title="${SCALE_HINT[n]}">${n}</button>`).join("")}
           <button class="na-btn ${na ? "on" : ""}" type="button" data-na="1" title="这一维对该模型不成立">N/A</button>
