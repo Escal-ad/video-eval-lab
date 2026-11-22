@@ -1,0 +1,286 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>法律 RAG — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .lr-bars { display: flex; flex-direction: column; gap: 12px; }
+    .lr-bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 52px; gap: 12px; align-items: center; }
+    .lr-bar-label { font-size: 12.5px; font-weight: 650; }
+    .lr-bar-track { height: 26px; background: #f2f4f7; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+    .lr-bar-fill { height: 100%; border-radius: 6px 0 0 6px; background: linear-gradient(90deg, #bfdbfe, #2563eb); }
+    .lr-bar-fill.good { background: linear-gradient(90deg, #a7f3d0, #0f9d58); }
+    .lr-bar-value { font-family: var(--mono); font-size: 12.5px; text-align: right; }
+    .lr-bar-note { grid-column: 2 / 4; margin-top: -4px; color: var(--muted); font-size: 11.5px; }
+    .lr-ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .lr-step { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .lr-step .lr-num { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+    .lr-step strong { display: block; margin-top: 3px; font-size: 13px; }
+    .lr-step span { display: block; margin-top: 3px; color: var(--muted); font-size: 11.5px; }
+    .lr-step em { display: inline-block; margin-top: 7px; font-style: normal; font-size: 10.5px; color: var(--muted); background: #f2f4f7; border-radius: 999px; padding: 1px 7px; }
+    .lr-pc { display: grid; grid-template-columns: 1fr 132px 1fr; gap: 12px; align-items: stretch; margin-top: 14px; }
+    .lr-pc-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+    .lr-pc-card.child { border-color: #bfdbfe; background: #f8fbff; }
+    .lr-pc-card.parent { border-color: #bbf7d0; background: #f7fef9; }
+    .lr-pc-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
+    .lr-pc-card strong { display: block; margin-top: 5px; font-size: 13.5px; }
+    .lr-pc-card p { margin-top: 5px; color: var(--muted); font-size: 11.8px; }
+    .lr-pc-card span { display: block; margin-top: 8px; font-size: 11px; color: #344054; }
+    .lr-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .lr-arrow b { font-size: 18px; color: var(--accent); font-weight: 500; }
+    .lr-note { border: 1px solid #dbe4f3; background: #f7faff; border-radius: 10px; padding: 12px 14px; color: #334155; font-size: 12.5px; margin-top: 14px; }
+    .lr-note strong { color: #1e3a8a; }
+    @media (max-width: 860px) {
+      .lr-ladder { grid-template-columns: 1fr 1fr; }
+      .lr-pc { grid-template-columns: 1fr; }
+      .lr-arrow { padding: 4px 0; }
+      .lr-bar-row { grid-template-columns: 82px minmax(0, 1fr) 46px; }
+    }
+  </style>
+</head>
+<body data-page="rag">
+<div style="position:fixed;left:14px;bottom:14px;z-index:9999;background:rgba(17,24,39,.88);color:#e5e7eb;font:12px/1.5 system-ui,-apple-system,sans-serif;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.14);pointer-events:none">v1 快照 · 2026-11-22 · 真实录屏接入前</div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap narrow">
+    <section class="section" style="margin-top:6px">
+      <div class="eyebrow">LEGAL RAG · 知识库 / 检索 / 评测</div>
+      <h1 style="font-size:clamp(28px,4vw,42px);max-width:880px;letter-spacing:-.035em">法律 RAG：先把法条切对，再谈检索</h1>
+      <p style="margin-top:14px;max-width:800px;color:var(--muted);font-size:15.5px">
+        iTerms 咨询智答知识库组的实习经历，加上用公开数据在 Dify 复现的一条最小链路。
+        团队评测与个人复现分开标注；数字只代表这个项目，趋势有参考价值。
+      </p>
+      <div class="hero-actions">
+        <span class="chip demo">团队评测 n≈300</span>
+        <span class="chip live">个人复现 624 chunk</span>
+        <span class="chip">Dify Cloud</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>四方案对比：每一步提升来自哪里</h2><span class="sub">同一套约 300 题评测集</span></div>
+      <div class="lr-bars">
+        <div class="lr-bar-row">
+          <div class="lr-bar-label">纯向量</div>
+          <div class="lr-bar-track"><div class="lr-bar-fill" style="width:63%"></div></div>
+          <div class="lr-bar-value">63%</div>
+          <div class="lr-bar-note">语义近，但常命中过时或不相关条文</div>
+        </div>
+        <div class="lr-bar-row">
+          <div class="lr-bar-label">纯 BM25</div>
+          <div class="lr-bar-track"><div class="lr-bar-fill" style="width:71%"></div></div>
+          <div class="lr-bar-value">71%</div>
+          <div class="lr-bar-note">条号/术语精确，但同义改写场景漏检</div>
+        </div>
+        <div class="lr-bar-row">
+          <div class="lr-bar-label">向量 + BM25</div>
+          <div class="lr-bar-track"><div class="lr-bar-fill" style="width:78%"></div></div>
+          <div class="lr-bar-value">78%</div>
+          <div class="lr-bar-note">两路互补，覆盖范围明显提升</div>
+        </div>
+        <div class="lr-bar-row">
+          <div class="lr-bar-label">融合 + 重排</div>
+          <div class="lr-bar-track"><div class="lr-bar-fill good" style="width:85%"></div></div>
+          <div class="lr-bar-value">85%</div>
+          <div class="lr-bar-note">正确条文从第 7 位提到第 2 位，模型才敢引用</div>
+        </div>
+      </div>
+      <div class="lr-note">
+        <strong>指标口径：</strong>答案级引用命中率——回答引用的条文里至少有一条命中标准答案条文；分母是“有引用的回答”。
+        n≈300、单项目，不代表通用水平；这也是它和严格 Hit@5 的区别。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>法律文本的 6 个特性</h2><span class="sub">决定了它不能按 512 字切</span></div>
+      <div class="method-grid three">
+        <div class="method-card"><h3>权威性 / 精确措辞</h3><p>“应当”是强制，“可以”是授权；差一个词结论就变。切分不能改写原文，引用必须精确到条号。</p></div>
+        <div class="method-card"><h3>时效性 / 版本</h3><p>法规会修订、废止、被新法取代。元数据要带 status 和生效日期，检索前过滤，不靠模型判断。</p></div>
+        <div class="method-card"><h3>强结构 / 坐标</h3><p>编 → 章 → 节 → 条 → 款 → 项；引用是“某法第 X 条第 X 款”，天然适合按条切分。</p></div>
+        <div class="method-card"><h3>长文本 / 跨法条</h3><p>一个劳动问题要同时看劳动合同法、司法解释、实施条例；单条召回不够，需要多路召回和父子分段。</p></div>
+        <div class="method-card"><h3>术语密集 / 坐标查询</h3><p>“劳动合同法第三十九条”这类查询靠字面命中；纯向量对编号不敏感，BM25 不能省。</p></div>
+        <div class="method-card"><h3>高风险 / 可追溯</h3><p>用户要“依据”不是“总结”。材料编号、引用格式、拒答、免责声明、评测闭环，一个都不能少。</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>切分：固定长度 → 结构切分 → 父子分段</h2><span class="sub">切完还能拼回去，才算切对</span></div>
+      <div class="method-grid three">
+        <div class="method-card">
+          <h3>固定长度</h3>
+          <p>1000 字 + 200 重叠，中文标点优先。简单、通用，但会从法条中间切开，丢掉“第 X 条”坐标。</p>
+          <p style="margin-top:8px"><span class="chip soon">基线</span></p>
+        </div>
+        <div class="method-card">
+          <h3>结构切分</h3>
+          <p>以“条”为单位，章/节路径、条号、款/项一起入库；超长条再按款拆，但保留完整坐标。</p>
+          <p style="margin-top:8px"><span class="chip live">法条主方案</span></p>
+        </div>
+        <div class="method-card">
+          <h3>父子分段</h3>
+          <p>子块（款/项）负责和 query 精确匹配；父块（整条）负责给模型完整上下文；引用回到条号。</p>
+          <p style="margin-top:8px"><span class="chip demo">长条文增强</span></p>
+        </div>
+      </div>
+
+      <div class="lr-pc">
+        <div class="lr-pc-card child">
+          <div class="lr-pc-tag">子块 · 检索</div>
+          <strong>第二十一条 第 2 款</strong>
+          <p>“在试用期中，除劳动者有本法第三十九条和第四十条第一项、第二项规定的情形外，用人单位不得解除劳动合同。”</p>
+          <span>和 query 精确匹配，负责“找得到”</span>
+        </div>
+        <div class="lr-arrow"><b>→</b><span>命中子块<br>回溯父块</span></div>
+        <div class="lr-pc-card parent">
+          <div class="lr-pc-tag">父块 · 生成</div>
+          <strong>第二十一条 整条</strong>
+          <p>引导句 + 全部款项，模型读到的是完整法律命题，而不是半截条文。</p>
+          <span>引用回“第二十一条”，负责“说得清”</span>
+        </div>
+      </div>
+      <div class="lr-note">
+        <strong>一句话：</strong>父子分段不是“再切一刀”，而是“检索用子块、生成用父块、引用回条号”。
+        主文还有一个更狠的说法：长条拆成均衡子块去重排，重排后按父级结构合并回引用单位——<strong>排序对象和展示对象分离</strong>。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>检索：BM25 为什么不能省</h2><span class="sub">法律里有一半是坐标型查询</span></div>
+      <div class="flow">
+        <div class="flow-step"><span class="n">01</span><strong>双路召回</strong><span>BM25 管条号/术语；向量管同义改写</span></div>
+        <div class="flow-step"><span class="n">02</span><strong>RRF 融合</strong><span>1/(k+rank)，k=60；只看排名，不看分数量纲</span></div>
+        <div class="flow-step"><span class="n">03</span><strong>重排</strong><span>交叉编码器逐对打分，把正确条文从第 7 提到第 2</span></div>
+        <div class="flow-step"><span class="n">04</span><strong>Top 3–6</strong><span>编号 + 来源头进 prompt，太多会稀释注意力</span></div>
+      </div>
+      <table class="table" style="margin-top:14px">
+        <thead><tr><th>查询类型</th><th>例子</th><th>主力</th><th>辅助</th></tr></thead>
+        <tbody>
+          <tr><td>语义型</td><td>没签合同被开除怎么维权</td><td>向量</td><td>BM25</td></tr>
+          <tr><td>坐标型</td><td>劳动合同法第三十九条说了什么</td><td>BM25</td><td>元数据（法规名）</td></tr>
+          <tr><td>术语型</td><td>竞业限制期限是几年</td><td>BM25</td><td>向量</td></tr>
+          <tr><td>多跳型</td><td>违法辞退能拿多少赔偿</td><td>向量 + BM25</td><td>重排、多轮压缩</td></tr>
+        </tbody>
+      </table>
+      <div class="lr-note">
+        <strong>为什么不是“向量 or BM25”：</strong>纯向量 63%，纯 BM25 71%，融合 78%。
+        坐标型查询靠 BM25，语义型查询靠向量；RRF 把两路排名合并，重排再做最后一道精排。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>四条路线对照</h2><span class="sub">同一件事的四种做法</span></div>
+      <table class="table">
+        <thead><tr><th>路线</th><th>切分</th><th>检索</th><th>最强点</th><th>局限</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LangChain 基线</strong></td><td>固定 1000 / 200</td><td>向量（进阶混合）</td><td>代码可跑、return_source_documents</td><td>切分不适合法条</td></tr>
+          <tr><td><strong>阿里 PAI</strong></td><td>通用分块（大小/重叠）</td><td>向量 + 改写 + 阈值</td><td>节点化流水线、阈值独立节点</td><td>不解决结构问题</td></tr>
+          <tr><td><strong>Dify 实战</strong></td><td>标注 + 父子分段</td><td>混合 + 阈值 + 问题拆解</td><td>父子分段、低代码可复现</td><td>评测弱、标题夸张</td></tr>
+          <tr><td><strong>生产级复盘</strong></td><td>条-款-项 + 元数据</td><td>BM25+向量+RRF+重排</td><td>端到端闭环、300 题评测</td><td>单项目数据、重排延迟</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>能力阶梯：从能跑到可信</h2><span class="sub">法律 RAG 的 8 级台阶</span></div>
+      <div class="lr-ladder">
+        <div class="lr-step"><span class="lr-num">L1</span><strong>能跑</strong><span>固定切分 + 向量 + prompt</span><em>LangChain</em></div>
+        <div class="lr-step"><span class="lr-num">L2</span><strong>切得对</strong><span>按“条”切，章/节/条号入元数据</span><em>生产级复盘</em></div>
+        <div class="lr-step"><span class="lr-num">L3</span><strong>匹配准</strong><span>父子分段：子块检索、父块生成</span><em>Dify + 主文</em></div>
+        <div class="lr-step"><span class="lr-num">L4</span><strong>找得全</strong><span>BM25 + 向量双路召回</span><em>主文 + LangChain</em></div>
+        <div class="lr-step"><span class="lr-num">L5</span><strong>排得准</strong><span>RRF 融合 → 重排 → Top 3–6</span><em>主文</em></div>
+        <div class="lr-step"><span class="lr-num">L6</span><strong>不乱答</strong><span>材料编号、引用格式、拒答、免责</span><em>主文 + LangChain</em></div>
+        <div class="lr-step"><span class="lr-num">L7</span><strong>不串版本</strong><span>status + effective_date 检索前过滤</span><em>主文</em></div>
+        <div class="lr-step"><span class="lr-num">L8</span><strong>可迭代</strong><span>300 题评测 + 三维度 + 延迟/拒答率</span><em>主文</em></div>
+      </div>
+      <div class="lr-note">
+        <strong>如果只讲一条线：</strong>L2 切得对 → L4 找得全 → L5 排得准 → L8 可迭代。这四步是法律 RAG 和通用 RAG 的真正分水岭。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Dify 实测：624 chunk 跑通</h2><span class="sub">个人复现，不是团队生产库</span></div>
+      <div class="flow">
+        <div class="flow-step"><span class="n">01</span><strong>公开数据</strong><span>民法典合同编 526 条 + 劳动合同法 98 条</span></div>
+        <div class="flow-step"><span class="n">02</span><strong>脚本清洗</strong><span>去 Markdown/HTML 注释/页码；按条切；624 chunk</span></div>
+        <div class="flow-step"><span class="n">03</span><strong>Dify 入库</strong><span>通用文本分块，分隔符 &lt;&lt;&lt;CHUNK&gt;&gt;&gt;，1000/0</span></div>
+        <div class="flow-step"><span class="n">04</span><strong>检索测试</strong><span>混合检索 + 重排；3 条 DISC 问题</span></div>
+      </div>
+      <div class="lr-note">
+        <strong>测试问题：</strong>开发商延期交房违约金怎么算 / 试用期辞退有没有经济补偿 / 定金罚则的适用条件。
+        这是“个人复现”，用来证明我理解链路；团队生产库是 10 部法规、6000+ chunk，两者不要混着说。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>数据侧：我在 iTerms 做的清洗流水线</h2><span class="sub">团队产出，个人负责其中一段</span></div>
+      <div class="flow">
+        <div class="flow-step"><span class="n">01</span><strong>收集</strong><span>10 部法规 PDF/DOCX，记录版本与生效日期</span></div>
+        <div class="flow-step"><span class="n">02</span><strong>解析</strong><span>pypdf / python-docx，保留页码与条款号</span></div>
+        <div class="flow-step"><span class="n">03</span><strong>去噪</strong><span>页眉页脚、目录、水印、页码、重复段落</span></div>
+        <div class="flow-step"><span class="n">04</span><strong>条款切分</strong><span>按“第 X 条”切，长条款再按款/项切</span></div>
+        <div class="flow-step"><span class="n">05</span><strong>去重合并</strong><span>同一法规多版本，保留现行有效版</span></div>
+        <div class="flow-step"><span class="n">06</span><strong>元数据</strong><span>法规名、条款号、生效日期、来源链接</span></div>
+        <div class="flow-step"><span class="n">07</span><strong>入库</strong><span>Dify 知识库 / 向量库，chunk 6000+</span></div>
+        <div class="flow-step"><span class="n">08</span><strong>评测</strong><span>300 题，测答案级引用命中率与引用准确率</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>清洗规则（示例）</h2><span class="sub">核心规则</span></div>
+      <table class="table">
+        <thead><tr><th>原始问题</th><th>处理规则</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>页眉页脚、页码混入正文</td><td>按行匹配固定模式删除；保留页码到元数据</td><td>chunk 不含噪声，能回溯页码</td></tr>
+          <tr><td>目录与正文重复</td><td>识别“目录”段落，整段剔除</td><td>避免同一内容被检索两次</td></tr>
+          <tr><td>一条法规多个版本</td><td>按生效日期取现行版；旧版归档不删</td><td>引用不会串版本</td></tr>
+          <tr><td>超长条款</td><td>按“（一）（二）”或句号二次切分，重叠 10%</td><td>检索粒度更稳，答案不漏项</td></tr>
+          <tr><td>表格与附件</td><td>表格转 Markdown；附件单独建 chunk 并标注</td><td>数值类问题可追到表</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>评测口径</h2><span class="sub">把分母写清楚，比数字本身更加分</span></div>
+      <table class="table">
+        <thead><tr><th>指标</th><th>定义</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td>答案级引用命中率</td><td>回答引用的条文里至少一条命中 gold 条文；分母=有引用的回答</td><td><span class="chip demo">团队 n≈300：63→71→78→85</span></td></tr>
+          <tr><td>引用准确率</td><td>回答里的法规名 + 条号与原文一致的比例</td><td><span class="chip demo">团队评测：80→93</span></td></tr>
+          <tr><td>拒答率</td><td>知识库没有依据时，明确说“不确定”的比例</td><td><span class="chip soon">待补</span></td></tr>
+          <tr><td>P95 延迟</td><td>端到端响应时间，比平均值更能反映体验</td><td><span class="chip soon">待补</span></td></tr>
+        </tbody>
+      </table>
+      <div class="lr-note">
+        <strong>边界：</strong>63/71/78/85 是团队评测数据；624 chunk 与 3 条测试问题是我个人复现。
+        两套数字不能相加，也不能说成“我一个人做的”。
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Legal RAG · 知识库 / 检索 / 评测</span>
+      <a href="method.html">回到方法页 →</a>
+    </footer>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

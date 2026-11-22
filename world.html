@@ -20,20 +20,51 @@
         <a data-page="badcase" href="badcase.html">BadCase 归因</a>
       </nav>
       <div class="top-actions">
-        <select class="role-select" aria-label="角色"><option>标注员</option><option>复核员</option><option>管理员</option></select>
         <button class="icon-btn" data-export>导出</button>
       </div>
     </div>
   </header>
 
   <main class="wrap">
+    <div class="summary">
+      <div class="cell">
+        <div class="k">案例集</div>
+        <div class="v" id="s-n">—</div>
+        <div class="s" id="s-n-sub">—</div>
+      </div>
+      <div class="cell">
+        <div class="k">GSB 净胜率</div>
+        <div class="v" id="s-gsb">—</div>
+        <div class="s" id="s-gsb-sub">—</div>
+      </div>
+      <div class="cell">
+        <div class="k">维度胜负（A–B）</div>
+        <div class="v plain" id="s-dims">—</div>
+      </div>
+      <div class="cell">
+        <div class="k">不可比项</div>
+        <div class="v" id="s-na">0</div>
+        <div class="s" id="s-na-sub">—</div>
+      </div>
+    </div>
+
     <div class="workbench">
       <aside class="col case-list">
         <div class="queue-head"><h3>评测场景</h3><span class="count">2</span></div>
         <div id="scene-list"></div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>这组能比什么</h3><span class="sub">● 可比　○ 不可比</span></div>
+          <div class="matrix" id="matrix"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>模型档案</h3><span class="sub">入口 / 画质 / 计价</span></div>
+          <div class="archive" id="archive"></div>
+        </div>
+
         <div style="margin-top:14px; display:grid; gap:8px;">
           <a class="btn small" href="method.html" style="width:100%;">看评分锚点</a>
-
         </div>
       </aside>
 
@@ -68,49 +99,82 @@
           <strong>预期：</strong><span id="world-expect">—</span>
         </div>
 
-        <div class="world-grid" id="grid"></div>
+        <div class="world-grid two-col" id="slots"></div>
+
+        <div class="transport2">
+          <button class="mini" type="button" disabled title="接入视频后可用">⏮ 帧 −1</button>
+          <button class="mini" type="button" disabled title="接入视频后可用">⏭ 帧 +1</button>
+          <button class="mini" type="button" disabled title="两侧同步播放">▶ 同步播放</button>
+          <span class="spacer"></span>
+          <span class="hint" style="margin:0;">双视频位为占位；文件接进来后启用帧步进与同位姿截帧</span>
+        </div>
 
         <div style="margin-top:16px;">
-          <div class="section-head" style="margin-bottom:8px;">
-            <h2 style="font-size:14px;">同位姿对照</h2>
+          <div class="sec-head" style="margin-bottom:8px;">
+            <h3>同位姿对照</h3>
             <span class="sub">去程记位姿，回程同位置截帧</span>
           </div>
           <div class="compare">
             <div class="frame"><div><strong>去程 · 0s 基准帧</strong>布局 / 遮挡 / 光照基准</div></div>
             <div class="frame"><div><strong>回程 · 同位置帧</strong>与左图逐项比对，标记差异</div></div>
           </div>
-          <div class="hint" style="margin-top:6px;">真实使用时：两帧并排 + 差异框 + 时间戳；这是“记忆一致性”最硬的证据。</div>
+          <div class="hint" style="margin-top:6px;">这是「记忆一致性」最硬的证据：两帧并排 + 差异框 + 时间戳。</div>
         </div>
       </section>
 
       <aside class="col panel">
-        <h3 id="model-title">评分</h3>
+        <h3 id="panel-title">评分</h3>
         <div class="panel-sub" id="model-sub">选择任意模型开始</div>
+
+        <div class="side-switch" id="side-switch">
+          <button type="button" data-side="A" class="on">A</button>
+          <button type="button" data-side="B">B</button>
+        </div>
+
         <div id="dims"></div>
+        <div id="na-warn"></div>
 
         <div class="field">
-          <label for="latency">交互延迟（ms，实测）</label>
-          <input id="latency" placeholder="例如 180">
+          <label>评分人</label>
+          <div class="rater" id="rater">
+            <button type="button" data-rater="r1" class="on">r1</button>
+            <button type="button" data-rater="r2">r2</button>
+          </div>
+          <div class="hint">两人独立打，分歧格单独记；样本小只算分歧率</div>
         </div>
 
         <div class="field">
-          <label for="effective">有效时长（s，画面开始崩之前）</label>
-          <input id="effective" placeholder="例如 42">
+          <label>会话时长 / 成本（实时流 ready 就计费）</label>
+          <div class="row2">
+            <input id="f-session" placeholder="秒，如 142">
+            <input id="f-cost" placeholder="$ 如 0.99">
+          </div>
+          <div class="hint">按会话存活时间算，不是按成片秒数 × 单价</div>
         </div>
 
         <div class="field">
-          <label for="evidence">证据时间戳</label>
-          <input id="evidence" placeholder="例如 00:06.2">
+          <label for="f-latency">交互延迟（ms，实测）</label>
+          <input id="f-latency" placeholder="例如 180">
         </div>
 
         <div class="field">
-          <label for="reason">失败模式 / 备注</label>
-          <textarea id="reason" placeholder="例如：绕回起点时红色杯子消失；转身后地标左移。"></textarea>
+          <label for="f-evidence">证据时间戳</label>
+          <input id="f-evidence" placeholder="例如 00:06.2">
+        </div>
+
+        <div class="field">
+          <label for="f-verdict">本题结论（一句话）</label>
+          <input id="f-verdict" placeholder="例如：B 回程位置更准，6.4s 处杯子仍在原位">
+        </div>
+
+        <div class="field">
+          <label for="f-notes">失败模式 / 备注</label>
+          <textarea id="f-notes" placeholder="例如：绕回起点时红色杯子消失；转身后地标左移。"></textarea>
         </div>
 
         <div class="vote-box hidden" id="vote-box">
           <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后揭盲</span></div>
-          <div class="vote-row">
+          <div class="vote-row" id="vote-row">
             <button class="vote-btn" type="button" data-vote="G">A 更好</button>
             <button class="vote-btn" type="button" data-vote="S">持平</button>
             <button class="vote-btn" type="button" data-vote="B">B 更好</button>
@@ -131,6 +195,6 @@
   </main>
 
   <script src="assets/app.js"></script>
-  <script src="assets/ab-workbench.js"></script>
+  <script src="assets/world-v2.js"></script>
 </body>
 </html>

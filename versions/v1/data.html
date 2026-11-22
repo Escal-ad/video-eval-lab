@@ -1,0 +1,231 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>数据 — 评估工作台</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="data">
+<div style="position:fixed;left:14px;bottom:14px;z-index:9999;background:rgba(17,24,39,.88);color:#e5e7eb;font:12px/1.5 system-ui,-apple-system,sans-serif;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.14);pointer-events:none">v1 快照 · 2026-11-22 · 真实录屏接入前</div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+      <nav class="nav">
+        <a data-page="caption" href="index.html">Caption 标注</a>
+        <a data-page="t2v" href="t2v.html">T2V 评测</a>
+        <a data-page="world" href="world.html">世界模型评测</a>
+        <a data-page="rag" href="rag.html">法律 RAG</a>
+        <a data-page="method" href="method.html">方法</a>
+        <a data-page="data" href="data.html">数据</a>
+        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
+      </nav>
+      <div class="top-actions">
+
+        <button class="icon-btn" data-export>导出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap narrow">
+    <div class="eyebrow" style="margin-top:6px;">Data · Schema · Samples</div>
+
+    <section class="section">
+      <div class="section-head"><h2>一条数据的四层</h2><span class="sub">案例 → 模型输出 → 人工标注 → 结果</span></div>
+      <div class="flow">
+        <div class="flow-step"><span class="n">01</span><strong>案例</strong><span>prompt、场景脚本、期望结果、评分维度</span></div>
+        <div class="flow-step"><span class="n">02</span><strong>模型输出</strong><span>视频文件、会话录屏、控制日志、延迟</span></div>
+        <div class="flow-step"><span class="n">03</span><strong>人工标注</strong><span>分数、证据时间戳、低分理由、置信度</span></div>
+        <div class="flow-step"><span class="n">04</span><strong>结果</strong><span>runs.json、导出 JSON、复核状态</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Caption 标注数据</h2><span class="sub">3 条实拍素材 · 各 1 个连续镜头</span></div>
+      <table class="table">
+        <thead><tr><th>clip</th><th>内容</th><th>时长</th><th>分段</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><code>cap-01</code></td><td>低照度人物特写</td><td>8.5s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
+          <tr><td><code>cap-02</code></td><td>黑白餐厅对话</td><td>11s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
+          <tr><td><code>cap-03</code></td><td>雨中新叶</td><td>11s</td><td>1</td><td><span class="chip demo">已接入</span></td></tr>
+        </tbody>
+      </table>
+
+      <p style="color:var(--muted);font-size:12.5px;margin-top:14px;">
+        一条 clip 记录长这样（字段是最终 schema，值是演示）：
+      </p>
+      <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.65;margin-top:10px;">{
+  "clip_id": "cap-01",
+  "title": "低照度人物特写",
+  "source": "实拍 / interview-clips",
+  "video": "assets/caption/cap-01_low-key.mp4",
+  "duration_sec": 8.5,
+  "resolution": "1280x720",
+  "shots": [
+    {
+      "start": 0.0,
+      "end": 3.0,
+      "caption": "幽暗林间，蓝发女孩穿暗红上衣，手握螺旋木杖，抬眼看向左前方，神情警觉。",
+      "dims": {
+        "tone": "冷调",
+        "angle": "平视",
+        "composition": "中心构图",
+        "lighting": "侧光",
+        "shot_size": "特写",
+        "camera": "固定"
+      },
+      "evidence_ts": 1.2
+    }
+  ],
+  "annotator": "demo",
+  "confidence": "medium",
+  "status": "draft"
+}</pre>
+      <div class="note" style="margin-top:12px;">
+        <strong>六个维度是固定的：</strong>色调、拍摄角度、构图、光影、景别、运镜。
+        每个镜头每个维度选一个标签；不确定就留空，不猜。
+        证据时间戳写在 <code>evidence_ts</code>，用来回看判断依据。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>T2V 评测数据</h2><span class="sub">2 个 case × 4 个模型 = 8 条输出</span></div>
+      <table class="table">
+        <thead><tr><th>case</th><th>测什么</th><th>prompt 摘要</th><th>模型</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><code>T01</code></td><td>中文文字渲染</td><td>便利店招牌「24小时营业」</td><td>4 路</td><td><span class="chip demo">公开源可接</span></td></tr>
+          <tr><td><code>T03</code></td><td>物理与运动</td><td>六个纸杯被推倒、慢动作</td><td>4 路</td><td><span class="chip demo">公开源可接</span></td></tr>
+        </tbody>
+      </table>
+
+      <p style="color:var(--muted);font-size:12.5px;margin-top:14px;">
+        一条 T2V 输出记录长这样；同一 case 下四路视频必须同 prompt、同时长、同分辨率：
+      </p>
+      <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.65;margin-top:10px;">{
+  "case_id": "T01",
+  "prompt": "夜晚的便利店门口，招牌上写着「24小时营业」，镜头缓慢推近，霓虹灯在湿地面反光",
+  "duration_sec": 5,
+  "models": ["seedance-2.0", "veo-3.1-fast", "wan-2.6", "kling-2.6"],
+  "blind_map": {
+    "A": "kling-2.6",
+    "B": "seedance-2.0",
+    "C": "wan-2.6",
+    "D": "veo-3.1-fast"
+  },
+  "output": {
+    "model": "seedance-2.0",
+    "path": "data/t2v/T01/seedance-2.0.mp4",
+    "resolution": "1080p",
+    "seed": 42
+  },
+  "scores": {
+    "text_consistency": 4,
+    "quality": 4,
+    "structure_stability": 3,
+    "motion": 4,
+    "aesthetics": 4
+  },
+  "failure": {
+    "type": "text_rendering",
+    "evidence_ts": 2.3,
+    "note": "第 3 秒「24」的 4 缺一笔"
+  }
+}</pre>
+      <div class="note" style="margin-top:12px;">
+        <strong>公开数据从哪来：</strong>AVGen-Bench 的 13 模型总榜与 failure case 可直接引用；
+        同 prompt 的四路视频如果缺 Seedance / Wan，就需要自己补生成，不能拿不同 prompt 的视频硬比。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>世界模型评测数据</h2><span class="sub">2 个场景 × 3 个模型 = 6 条会话</span></div>
+      <table class="table">
+        <thead><tr><th>场景</th><th>测什么</th><th>动作脚本</th><th>模型</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><code>S02</code></td><td>空间记忆</td><td>绕桌一圈回起点</td><td>3 路</td><td><span class="chip soon">待录屏</span></td></tr>
+          <tr><td><code>S05</code></td><td>视角一致性</td><td>180 度转身再转回</td><td>3 路</td><td><span class="chip soon">待录屏</span></td></tr>
+        </tbody>
+      </table>
+
+      <p style="color:var(--muted);font-size:12.5px;margin-top:14px;">
+        一条交互会话记录长这样；除了分数，还要存控制日志和同位姿帧：
+      </p>
+      <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.65;margin-top:10px;">{
+  "scene_id": "S02",
+  "model": "genie-4",
+  "session": {
+    "resolution": "720p",
+    "fps": 24,
+    "duration_sec": 42,
+    "latency_ms": 180
+  },
+  "control_log": [
+    { "t": 0, "key": "W", "held_sec": 6 },
+    { "t": 6, "key": "D", "held_sec": 2 },
+    { "t": 8, "key": "W", "held_sec": 4 }
+  ],
+  "checkpoints": {
+    "start_frame": "data/world/S02/genie-4/frames/000.png",
+    "return_frame": "data/world/S02/genie-4/frames/420.png"
+  },
+  "scores": {
+    "instruction": 4,
+    "physics": 3,
+    "camera": 4,
+    "memory": 2
+  },
+  "failure": {
+    "type": "memory",
+    "evidence_ts": 38,
+    "note": "回到起点时红色杯子消失，桌面布局漂移"
+  }
+}</pre>
+      <div class="note" style="margin-top:12px;">
+        <strong>为什么多存两帧：</strong>去程和回程在同一位置各截一帧，才能做“同位姿对照”。
+        没有这两帧，“记忆一致性”就只能靠感觉，没法复核。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>目录与文件命名</h2><span class="sub">接入素材时按这个放</span></div>
+      <pre class="mono" style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.7;">video-eval-lab/
+├─ assets/
+│  └─ caption/
+│     ├─ cap-01_low-key.mp4
+│     ├─ cap-02_restaurant.mp4
+│     └─ cap-03_rain.mp4
+├─ data/
+│  ├─ t2v/
+│  │  └─ T01/
+│  │     ├─ seedance-2.0.mp4
+│  │     ├─ veo-3.1-fast.mp4
+│  │     ├─ wan-2.6.mp4
+│  │     └─ kling-2.6.mp4
+│  └─ world/
+│     └─ S02/
+│        ├─ genie-4/session.mp4
+│        ├─ hy-nomas/session.mp4
+│        └─ happy-oyster/session.mp4
+├─ runs.json
+├─ models.json
+└─ cases.json</pre>
+      <div class="note warn" style="margin-top:12px;">
+        <strong>当前状态：</strong><code>models.json</code> 和 <code>cases.json</code> 已有；
+        <code>runs.json</code> 还没生成；Caption 的 3 条素材、T2V 的 8 条视频、世界模型的 6 条会话都还没落盘。
+        这一页先把字段和目录定下来，接入时不用再改结构。
+      </div>
+      <div class="note" style="margin-top:12px;">
+        <strong>GSB 对比记录：</strong>不在本页，见 <a href="method.html#gsb">方法页 → GSB 对比</a>。
+        本页列的是逐条 rubric 标注数据；GSB 是同一 case 下 A/B 的一次投票，字段结构不同。
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Data · v1.0 · 2026-11</span>
+      <a href="index.html">回到 Caption 标注 →</a>
+    </footer>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
