@@ -154,7 +154,7 @@
       $$("#case-list .case").forEach(el => {
         el.addEventListener("click", () => {
           state.caseId = el.dataset.case;
-          state.mode = cstore().mode || "ab";
+          state.mode = "ab"; // 单模型 Rubric 已下线：旧存档里的 rubric 不再生效
           initPairIds();
           $("#blind-toggle").checked = !!cstore().blind;
           renderAll();
@@ -408,7 +408,7 @@
     });
     $("#export-btn").addEventListener("click", () => dl("t2v-annotations.json", store.t2v));
 
-    state.mode = cstore().mode || "ab";
+    state.mode = "ab"; // 单模型 Rubric 已下线
     initPairIds();
     $("#blind-toggle").checked = !!cstore().blind;
     bindVote();

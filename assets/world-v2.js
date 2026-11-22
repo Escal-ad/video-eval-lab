@@ -7,7 +7,7 @@
 (() => {
   "use strict";
 
-  const KEY = "velab_world_v2";
+  const KEY = "velab_world_v3";
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -130,7 +130,6 @@
 
   const fresh = () => ({
     scene: "S02",
-    mode: "ab",
     side: "A",
     slots: { A: "hy-nomas", B: "happy-oyster" },
     rater: "r1",
@@ -151,7 +150,8 @@
 
   const modelOf = (id) => MODELS.find((m) => m.id === id) || MODELS[0];
   const sceneOf = (id) => SCENES.find((s) => s.id === id) || SCENES[0];
-  const isAb = () => state.mode === "ab";
+  /* 「单模型 Rubric」模式已下线：绝对分本身就是 A/B 两侧独立打分的副产品。
+     只在对手缺失时降级为单侧评分——此时不产生 GSB。 */
   const pairKey = () => state.scene + "|" + state.slots.A + "~" + state.slots.B;
 
   /* 格子按「场景 × 模型」存：换模型不会把上一个模型的分数和 N/A 带过来 */
@@ -162,7 +162,7 @@
     return state.cells[k];
   }
   const cellOf = (side) => modelCell(state.slots[side]);
-  const currentSide = () => (isAb() ? state.side : "A");
+  const currentSide = () => state.side;
   const currentModel = () => modelOf(state.slots[currentSide()]);
   const currentCell = () => cellOf(currentSide());
 
@@ -230,11 +230,6 @@
     const opts = (sel) => MODELS.map((m) => `<option value="${esc(m.id)}" ${m.id === sel ? "selected" : ""}>${esc(m.name)}</option>`).join("");
     $("#pair-a").innerHTML = opts(state.slots.A);
     $("#pair-b").innerHTML = opts(state.slots.B);
-    $("#pair-a").disabled = !isAb();
-    $("#pair-b").disabled = !isAb();
-    $("#mode-note").textContent = isAb()
-      ? "两侧独立 Rubric → 整体 A/B 单选 → 揭盲"
-      : "单模型 Rubric：不产生 GSB，只留绝对分";
   }
 
   function renderStageHead() {
@@ -245,20 +240,20 @@
   }
 
   function revealedNow() {
-    return !isAb() || !!(state.votes[pairKey()] || {}).revealed;
+    return !!(state.votes[pairKey()] || {}).revealed;
   }
 
   function renderSlots() {
     const revealed = revealedNow();
-    const sides = isAb() ? ["A", "B"] : ["A"];
-    $("#slots").className = "world-grid " + (sides.length === 2 ? "two-col" : "");
+    const sides = ["A", "B"];
+    $("#slots").className = "world-grid two-col";
     $("#slots").innerHTML = sides.map((side) => {
       const m = modelOf(state.slots[side]);
       const c = cellOf(side);
       const avg = avgOf(c);
       const n = numDims(c).length;
       const naN = naDims(c).length;
-      const on = isAb() && state.side === side ? "selected" : "";
+      const on = state.side === side ? "selected" : "";
       const who = revealed ? esc(m.name) : "模型 " + side;
       const sub = revealed ? esc([m.vendor, m.res].filter(Boolean).join(" · ")) : "同场景 · 同初始帧 · 名称隐藏";
       return `<div class="slot ${on}" data-side="${side}">
@@ -281,15 +276,10 @@
     const baseNa = m.na || {};
     const revealed = revealedNow();
 
-    $("#side-switch").style.display = isAb() ? "" : "none";
     $$("#side-switch button").forEach((b) => b.classList.toggle("on", b.dataset.side === state.side));
 
-    $("#panel-title").textContent = isAb()
-      ? "评分：" + state.side + (revealed ? "（" + m.name + "）" : "（名称隐藏）")
-      : "评分：" + m.name;
-    $("#model-sub").textContent = isAb()
-      ? "点 A/B 切换评分侧；两侧都评完再揭盲"
-      : "单个模型绝对分，1/3/5 三档，不参与 GSB";
+    $("#panel-title").textContent = "评分：" + state.side + (revealed ? "（" + m.name + "）" : "（名称隐藏）");
+    $("#model-sub").textContent = "点 A/B 切换评分侧；两侧都评完再揭盲";
 
     $("#dims").innerHTML = DIMS.map((d) => {
       const v = c.dims[d.key];
@@ -326,12 +316,12 @@
 
   function renderVote() {
     const box = $("#vote-box");
-    box.classList.toggle("hidden", !isAb());
-    if (!isAb()) return;
     const a = cellOf("A");
     const b = cellOf("B");
     const doneA = sideComplete(a);
     const doneB = sideComplete(b);
+    /* 只评了一侧 = 不成对：不产生 GSB，投票区收起，只留绝对分 */
+    box.classList.toggle("hidden", !(doneA && doneB));
     const v = state.votes[pairKey()] || {};
     const revealed = !!v.revealed;
 
@@ -429,15 +419,6 @@
       state.scene = el.dataset.scene;
       persist();
       renderAll();
-    });
-
-    $$(".mode-btn").forEach((b) => {
-      b.addEventListener("click", () => {
-        state.mode = b.dataset.mode;
-        $$(".mode-btn").forEach((x) => x.classList.toggle("on", x === b));
-        persist();
-        renderAll();
-      });
     });
 
     $("#pair-a").addEventListener("change", (e) => {
@@ -582,7 +563,7 @@
     });
 
     $("#export-btn").addEventListener("click", () => {
-      const sides = isAb() ? ["A", "B"] : ["A"];
+      const sides = ["A", "B"];
       const scores = sides.map((side) => {
         const c = cellOf(side);
         const m = modelOf(state.slots[side]);
@@ -591,7 +572,7 @@
         return {
           case_id: state.scene,
           model: m.id,
-          side: isAb() ? side : null,
+          side: side,
           dims,
           na_reason: c.na,
           latency_ms: c.fields.latency_ms == null ? null : c.fields.latency_ms,
@@ -609,7 +590,7 @@
         exported_at: new Date().toISOString(),
         case: sceneOf(state.scene),
         run: {
-          mode: state.mode,
+          mode: "ab",
           slots: state.slots,
           blind: !v.revealed,
           verdict: state.verdicts[pairKey()] || "",
