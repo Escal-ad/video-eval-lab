@@ -519,3 +519,19 @@ code, .mono { font-family: var(--mono); }
 @media (max-width: 980px) {
   .summary { grid-template-columns: 1fr 1fr; }
 }
+
+/* ===== t2v real clips ===== */
+.model-stage .slot-video,
+.slot-stage .slot-video,
+.stage .slot-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #0b1020;
+  border-radius: inherit;
+}
+
+/* keep case pill on one line */
+.chip, .wb-head .tag, .case-head .tag, .badge { white-space: nowrap; }

@@ -56,30 +56,30 @@
     ],
     t2vCases: [
       {
-        id: "T01",
-        name: "中文招牌文字",
-        prompt: "夜晚的便利店门口，招牌上写着「24小时营业」，镜头缓慢推近，霓虹灯在湿地面反光",
+        id: "TA-01",
+        name: "特写 · 硬币与价签",
+        prompt: "特写，固定镜头。一位年轻女性的双手在深色木桌上，把三枚银色硬币一枚一枚地排成一条直线；桌子右下角贴着一张手写价签，上面写着「¥3」。暖色侧光从左边打来，桌面有轻微反光，背景虚化。",
         duration: 5,
+        gsb: true,
         models: [
-          { id: "seedance", name: "Seedance 2.0", vendor: "字节跳动", meta: "1080p · 5s", score: 72.07 },
-          { id: "veo", name: "Veo 3.1 Fast", vendor: "Google", meta: "1080p · 5s", score: 67.87 },
-          { id: "wan", name: "Wan 2.6", vendor: "阿里巴巴", meta: "1080p · 5s", score: 62.97 },
-          { id: "kling", name: "Kling 2.6", vendor: "快手", meta: "1080p · 5s", score: 61.82 }
+          { id: "kling-2.6", name: "Kling 2.6", vendor: "快手", meta: "1280×720 · 24fps · 5.04s", video: "assets/t2v/TA01/kling-2.6.mp4" },
+          { id: "pixverse-v6", name: "拍我AI V6", vendor: "爱诗科技", meta: "1280×720 · 24fps · 5.04s", video: "assets/t2v/TA01/pixverse-v6.mp4" }
         ],
-        conclusion: "本案例：Seedance 2.0 的文字完整度最好；Kling 出现 1 处错字。"
+        conclusion: ""
       },
       {
-        id: "T03",
-        name: "叠杯倒塌",
-        prompt: "桌面上叠着六个白色纸杯，一只手从左侧推倒它们，纸杯散落，慢动作",
+        id: "TB-01",
+        name: "牛奶倾倒 · 液体因果",
+        prompt: "中等景别，镜头缓慢向右平移。白色桌面上有一只装牛奶的玻璃杯，被一只手从左侧碰倒，牛奶沿桌面铺开并从桌沿滴落，杯子滚动半圈后停下。室内自然光，浅景深。",
         duration: 5,
+        gsb: false,
+        skipDims: ["quality", "aesthetic"],
+        modeNote: "本组只评三维（文本一致性 / 结构稳定性 / 运动效果）；画质两维不评，因为两侧原生分辨率不同",
         models: [
-          { id: "seedance", name: "Seedance 2.0", vendor: "字节跳动", meta: "1080p · 5s", score: 72.07 },
-          { id: "veo", name: "Veo 3.1 Fast", vendor: "Google", meta: "1080p · 5s", score: 67.87 },
-          { id: "wan", name: "Wan 2.6", vendor: "阿里巴巴", meta: "1080p · 5s", score: 62.97 },
-          { id: "kling", name: "Kling 2.6", vendor: "快手", meta: "1080p · 5s", score: 61.82 }
+          { id: "hailuo-h3", name: "海螺 H3", vendor: "MiniMax", meta: "1344×768 · 24fps · 5.17s", video: "assets/t2v/TB01/hailuo-h3.mp4" },
+          { id: "vidu-q3", name: "Vidu Q3", vendor: "生数科技", meta: "1920×1080 · 24fps · 5.04s", video: "assets/t2v/TB01/vidu-q3.mp4" }
         ],
-        conclusion: "本案例：Veo 的碰撞链最连贯；Wan 出现纸杯黏连。"
+        conclusion: ""
       }
     ],
     worldScenes: [

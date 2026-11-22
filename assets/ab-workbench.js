@@ -69,6 +69,11 @@
       return currentCase().models;
     }
 
+    function stage(m) {
+      if (!m || !m.video) return `<span class="ph">视频占位<br>接入后自动播放</span>`;
+      return `<video class="slot-video" controls preload="auto" playsinline preload="auto" src="${m.video}#t=0.1"></video>`;
+    }
+
     function cstore() {
       if (!store.t2v[state.caseId]) store.t2v[state.caseId] = { models: {}, blind: false };
       const c = store.t2v[state.caseId];
@@ -126,13 +131,13 @@
       $$(".mode-btn").forEach(btn => btn.classList.toggle("on", btn.dataset.mode === state.mode));
       $("#pair-controls").classList.toggle("hidden", state.mode !== "ab");
       $("#blind-label").classList.toggle("hidden", state.mode === "ab");
-      $("#vote-box").classList.toggle("hidden", state.mode !== "ab");
+      $("#vote-box").classList.toggle("hidden", state.mode !== "ab" || currentCase().gsb === false);
       const hint = $("#ab-hint");
       if (hint) hint.classList.toggle("hidden", state.mode !== "ab");
       $("#case-note").classList.toggle("hidden", state.mode === "ab");
-      $("#mode-note").textContent = state.mode === "ab"
+      $("#mode-note").textContent = currentCase().modeNote || (state.mode === "ab"
         ? "两侧独立 Rubric → A/B 随机绑定 → 整体单选 → 揭盲"
-        : "逐模型 1/3/5 三档；可开盲评隐藏模型名";
+        : "逐模型 1/3/5 三档；可开盲评隐藏模型名");
     }
 
     function renderPairSelects() {
@@ -167,6 +172,10 @@
       const blind = $("#blind-toggle").checked;
       $("#case-title").textContent = `${c.id} · ${c.name}`;
       $("#case-prompt").textContent = c.prompt;
+      const chip = document.querySelector(".stage-head .chip");
+      if (chip) chip.textContent = `T2V · ${activeDims().length} 维`;
+      const noteEl = $("#mode-note");
+      if (noteEl) noteEl.textContent = c.modeNote || "两侧独立 Rubric → 整体 A/B 单选 → 揭盲";
 
       if (state.mode === "rubric") {
         $("#grid").innerHTML = c.models.map((m, i) => {
@@ -175,14 +184,14 @@
           return `<div class="model-card ${m.id === state.modelId ? "selected" : ""}" data-model="${m.id}">
             <div class="model-stage">
               <span class="model-label">${label}</span>
-              <span class="ph">视频占位<br>接入后自动播放</span>
+              ${stage(m)}
             </div>
             <div class="model-body">
               <div class="name">${blind ? label : `${m.name} · ${m.vendor}`}</div>
-              <div class="meta">${m.meta} · 公开榜 ${m.score}</div>
+              <div class="meta">${m.meta}${m.score ? ` · 公开榜 ${m.score}` : ""}</div>
               <div class="score-chips">
-                <span class="score-chip">均分 ${avg(saved, T2V_DIMS)}</span>
-                <span class="score-chip">${done(saved, T2V_DIMS)}/5 维</span>
+                <span class="score-chip">均分 ${avg(saved, activeDims())}</span>
+                <span class="score-chip">${done(saved, activeDims())}/${activeDims().length} 维</span>
               </div>
             </div>
           </div>`;
@@ -205,18 +214,20 @@
         const saved = pair.models[id];
         const label = slot;
         const body = pair.revealed ? `${m.name} · ${m.vendor}` : `模型 ${slot}`;
-        const meta = pair.revealed ? `${m.meta} · 公开榜 ${m.score}` : "同 prompt · 同 seed · 名称隐藏";
+        const meta = pair.revealed
+          ? `${m.meta}${m.score ? ` · 公开榜 ${m.score}` : ""}`
+          : "同 prompt · 名称隐藏";
         return `<div class="model-card ${state.active === slot ? "selected" : ""}" data-slot="${slot}">
           <div class="model-stage">
             <span class="model-label">${label}</span>
-            <span class="ph">视频占位<br>接入后自动播放</span>
+            ${stage(m)}
           </div>
           <div class="model-body">
             <div class="name">${body}</div>
             <div class="meta">${meta}</div>
             <div class="score-chips">
-              <span class="score-chip">均分 ${avg(saved, T2V_DIMS)}</span>
-              <span class="score-chip">${done(saved, T2V_DIMS)}/5 维</span>
+              <span class="score-chip">均分 ${avg(saved, activeDims())}</span>
+              <span class="score-chip">${done(saved, activeDims())}/${activeDims().length} 维</span>
             </div>
           </div>
         </div>`;
@@ -235,7 +246,9 @@
       const name = id => (ms.find(m => m.id === id) || { name: id }).name;
       const a = pair.models[pair.slots.A];
       const b = pair.models[pair.slots.B];
-      deriveVotes(pair, T2V_DIMS);
+      const vbox = $("#vote-box");
+      if (vbox) vbox.classList.toggle("hidden", currentCase().gsb === false);
+      deriveVotes(pair, activeDims());
       $$("#vote-box [data-vote]").forEach(btn => {
         btn.classList.toggle("primary", pair.vote === btn.dataset.vote);
       });
@@ -244,25 +257,25 @@
         const pos = pair.position || { left: "A", right: "B" };
         el.innerHTML = `A = ${name(pair.slots.A)}，B = ${name(pair.slots.B)}（${pos.left} 在左，${pos.right} 在右）；本轮 ${pair.vote ? VOTE_LABEL[pair.vote] : "未投票"}。`;
       } else if (pair.vote) {
-        el.textContent = `已记录「${VOTE_LABEL[pair.vote]}」；两侧 ${done(a, T2V_DIMS)}/5、${done(b, T2V_DIMS)}/5 维。点揭盲看 A/B。`;
+        el.textContent = `已记录「${VOTE_LABEL[pair.vote]}」；两侧 ${done(a, activeDims())}/${activeDims().length}、${done(b, activeDims())}/${activeDims().length} 维。点揭盲看 A/B。`;
       } else {
-        el.textContent = `两侧 ${done(a, T2V_DIMS)}/5、${done(b, T2V_DIMS)}/5 维；先打分，再投整体。`;
+        el.textContent = `两侧 ${done(a, activeDims())}/${activeDims().length}、${done(b, activeDims())}/${activeDims().length} 维；先打分，再投整体。`;
       }
       const deltas = $("#vote-deltas");
       if (deltas) {
-        const parts = T2V_DIMS.map(d => {
+        const parts = activeDims().map(d => {
           const av = a.dims[d.key];
           const bv = b.dims[d.key];
           if (!av || !bv) return null;
           const diff = av - bv;
           return `${d.label} ${diff > 0 ? `A+${diff}` : diff < 0 ? `B+${-diff}` : "0"}`;
         }).filter(Boolean);
-        let text = parts.length === T2V_DIMS.length
+        let text = parts.length === activeDims().length
           ? `分维度（Rubric 差值）：${parts.join(" · ")}`
           : "";
-        if (parts.length === T2V_DIMS.length && pair.vote) {
-          const g = T2V_DIMS.filter(d => a.dims[d.key] > b.dims[d.key]).length;
-          const bb = T2V_DIMS.filter(d => a.dims[d.key] < b.dims[d.key]).length;
+        if (parts.length === activeDims().length && pair.vote) {
+          const g = activeDims().filter(d => a.dims[d.key] > b.dims[d.key]).length;
+          const bb = activeDims().filter(d => a.dims[d.key] < b.dims[d.key]).length;
           const majority = g > bb ? "G" : bb > g ? "B" : "S";
           if (majority !== "S" && pair.vote !== majority) {
             text += " · 整体票与 Rubric 多数不一致，请在理由里说明";
@@ -276,11 +289,11 @@
       if (concl) {
         if (!pair.revealed) {
           concl.textContent = "";
-        } else if (done(a, T2V_DIMS) === T2V_DIMS.length && done(b, T2V_DIMS) === T2V_DIMS.length) {
-          const avgA = (T2V_DIMS.reduce((s, d) => s + a.dims[d.key], 0) / T2V_DIMS.length).toFixed(1);
-          const avgB = (T2V_DIMS.reduce((s, d) => s + b.dims[d.key], 0) / T2V_DIMS.length).toFixed(1);
-          const g = T2V_DIMS.filter(d => a.dims[d.key] > b.dims[d.key]).length;
-          const bb = T2V_DIMS.filter(d => a.dims[d.key] < b.dims[d.key]).length;
+        } else if (done(a, activeDims()) === activeDims().length && done(b, activeDims()) === activeDims().length) {
+          const avgA = (activeDims().reduce((s, d) => s + a.dims[d.key], 0) / activeDims().length).toFixed(1);
+          const avgB = (activeDims().reduce((s, d) => s + b.dims[d.key], 0) / activeDims().length).toFixed(1);
+          const g = activeDims().filter(d => a.dims[d.key] > b.dims[d.key]).length;
+          const bb = activeDims().filter(d => a.dims[d.key] < b.dims[d.key]).length;
           const majority = g > bb ? "G" : bb > g ? "B" : "S";
           const mismatch = pair.vote && majority !== "S" && pair.vote !== majority;
           concl.textContent = `本组 A（${name(pair.slots.A)}）均分 ${avgA}、B（${name(pair.slots.B)}）均分 ${avgB}，整体判 ${pair.vote ? VOTE_LABEL[pair.vote] : "未投票"}。${mismatch ? "整体票与 Rubric 多数不一致，理由见右栏。" : ""}结论只对应该组配对，不作跨案例排名。`;
@@ -307,6 +320,11 @@
       });
     }
 
+    function activeDims() {
+      const skip = currentCase().skipDims || [];
+      return T2V_DIMS.filter(d => !skip.includes(d.key));
+    }
+
     function renderPanel() {
       const c = currentCase();
 
@@ -319,7 +337,7 @@
           ? `评分：${state.active} · ${m.name}`
           : `评分：${state.active}（名称隐藏）`;
         $("#model-sub").textContent = "点 A/B 卡切换评分侧；两侧都评完再揭盲";
-        $("#dims").innerHTML = scoreRow(T2V_DIMS, saved.dims);
+        $("#dims").innerHTML = scoreRow(activeDims(), saved.dims);
         $("#evidence").value = saved.evidence || "";
         $("#reason").value = saved.reason || "";
         $("#save-btn").textContent = "保存本轮评分";
@@ -333,7 +351,7 @@
       const saved = cstore().models[m.id] || (cstore().models[m.id] = blankT2V());
       $("#model-title").textContent = `评分：${m.name}`;
       $("#model-sub").textContent = `${m.vendor} · ${m.meta}`;
-      $("#dims").innerHTML = scoreRow(T2V_DIMS, saved.dims);
+      $("#dims").innerHTML = scoreRow(activeDims(), saved.dims);
       $("#evidence").value = saved.evidence || "";
       $("#reason").value = saved.reason || "";
       $("#save-btn").textContent = "保存本模型评分";
@@ -361,7 +379,7 @@
       $("#reveal-btn").onclick = () => {
         const { pair } = getPair();
         if (!pair.vote) { toast("先投整体判断"); return; }
-        const ok = T2V_DIMS.every(d =>
+        const ok = activeDims().every(d =>
           pair.models[pair.slots.A].dims[d.key] && pair.models[pair.slots.B].dims[d.key]
         );
         if (!ok) { toast("两侧 rubric 都评完再揭盲"); return; }
