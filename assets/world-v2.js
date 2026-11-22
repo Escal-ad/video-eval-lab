@@ -48,10 +48,10 @@
     },
     {
       id: "hy-nomas", name: "Hy-Nomas", vendor: "腾讯混元",
-      access: "官方 demo（网页，填 prompt 自动生成）",
-      res: "720p", fps: 24, session_limit_sec: 60,
-      controls: "无实时按键：以 prompt 自动生成",
-      paradigm: "generative", rate: null, na: { camera: "不具备该能力" },
+      access: "官方 demo（网页：先生成世界，再进相机控制实时驱动）",
+      res: "1280x704", fps: 24, session_limit_sec: 60,
+      controls: "两段式：prompt 生成世界 → 相机控制 WASD + 方向键（可录制）",
+      paradigm: "generative", rate: null, na: {},
     },
     {
       id: "matrix-game-4", name: "Matrix-Game 4.0", vendor: "昆仑万维 Skywork",
@@ -68,7 +68,16 @@
       controls: "起始帧 + 第一人称 + WASD",
       paradigm: "generative", rate: 1.668, na: {},
     },
+    {
+      id: "zing-0.5", name: "Zing-0.5", vendor: "Loopit（开源）",
+      access: "Hugging Face Space（ZeroGPU 排队）/ 自部署",
+      res: "832x480", fps: 24, session_limit_sec: null,
+      controls: "参考图 + 动作/文本条件（非实时漫游）",
+      paradigm: "generative", rate: null, na: {},
+    },
   ];
+
+  let CLIPS = {};
 
   let SCENES = [
     {
@@ -84,6 +93,30 @@
   ];
 
   async function loadData() {
+    /* 真实录屏（4 场景 × 2 模型）：优先接管场景与配对 */
+    try {
+      const r = await fetch("assets/world/clips.json", { cache: "no-store" });
+      if (r.ok) {
+        const j = await r.json();
+        if (j && Array.isArray(j.scenes) && j.scenes.length) {
+          CLIPS = {};
+          SCENES = j.scenes.map((s) => {
+            CLIPS[s.id] = s.clips || {};
+            const durs = Object.values(s.clips || {}).map((c) => Number(c.dur) || 0);
+            return {
+              id: s.id,
+              name: s.name,
+              duration_sec: durs.length ? Math.round(Math.max.apply(null, durs)) : (s.duration_sec || 0),
+              action: s.action || "",
+              expect: s.expect || "",
+              ref: s.ref || "",
+              pair: Array.isArray(s.pair) && s.pair.length ? s.pair : null,
+            };
+          });
+        }
+      }
+    } catch (e) { /* 兜底 */ }
+
     try {
       const [mr, cr] = await Promise.all([
         fetch("models.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
@@ -93,6 +126,7 @@
       const inter = Array.isArray(list) ? list.filter((m) => m && m.kind !== "t2v" && m.paradigm) : null;
       const live = (mr && mr.interactive) || inter;
       if (Array.isArray(live) && live.length) {
+        const fb = MODELS;
         MODELS = live.map((x) => {
           const base = MODELS.find((b) => b.id === x.id) || {};
           return {
@@ -109,6 +143,15 @@
             na: base.na || {},
             rate: base.rate === undefined ? null : base.rate,
           };
+        });
+        /* clips.json 里出现、但 models.json 没登记的模型，用兜底档案补齐 */
+        Object.values(CLIPS).forEach((clips) => {
+          Object.keys(clips || {}).forEach((id) => {
+            if (!MODELS.find((m) => m.id === id)) {
+              const b = fb.find((m) => m.id === id);
+              if (b) MODELS.push(b);
+            }
+          });
         });
       }
       if (cr && Array.isArray(cr.interactive_scenes) && cr.interactive_scenes.length) {
@@ -150,6 +193,17 @@
 
   const modelOf = (id) => MODELS.find((m) => m.id === id) || MODELS[0];
   const sceneOf = (id) => SCENES.find((s) => s.id === id) || SCENES[0];
+  const scenePair = () => {
+    const s = sceneOf(state.scene);
+    if (Array.isArray(s.pair) && s.pair.length >= 2) return s.pair;
+    const clips = CLIPS[state.scene];
+    if (clips) {
+      const ids = Object.keys(clips);
+      if (ids.length >= 2) return ids.slice(0, 2);
+    }
+    return null;
+  };
+  const clipOf = (modelId) => (CLIPS[state.scene] || {})[modelId] || null;
   /* 「单模型 Rubric」模式已下线：绝对分本身就是 A/B 两侧独立打分的副产品。
      只在对手缺失时降级为单侧评分——此时不产生 GSB。 */
   const pairKey = () => state.scene + "|" + state.slots.A + "~" + state.slots.B;
@@ -185,6 +239,8 @@
   /* ---------------- 渲染 ---------------- */
 
   function renderScenes() {
+    const cnt = document.querySelector(".queue-head .count");
+    if (cnt) cnt.textContent = String(SCENES.length);
     $("#scene-list").innerHTML = SCENES.map((s) => {
       const on = s.id === state.scene ? "active" : "";
       return `<div class="case ${on}" data-scene="${s.id}">
@@ -227,7 +283,9 @@
   }
 
   function renderPairControls() {
-    const opts = (sel) => MODELS.map((m) => `<option value="${esc(m.id)}" ${m.id === sel ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+    const pair = scenePair();
+    const list = pair ? pair.map(modelOf) : MODELS;
+    const opts = (sel) => list.map((m) => `<option value="${esc(m.id)}" ${m.id === sel ? "selected" : ""}>${esc(m.name)}</option>`).join("");
     $("#pair-a").innerHTML = opts(state.slots.A);
     $("#pair-b").innerHTML = opts(state.slots.B);
   }
@@ -250,16 +308,22 @@
     $("#slots").innerHTML = sides.map((side) => {
       const m = modelOf(state.slots[side]);
       const c = cellOf(side);
+      const clip = clipOf(m.id);
       const avg = avgOf(c);
       const n = numDims(c).length;
       const naN = naDims(c).length;
       const on = state.side === side ? "selected" : "";
       const who = revealed ? esc(m.name) : "模型 " + side;
-      const sub = revealed ? esc([m.vendor, m.res].filter(Boolean).join(" · ")) : "同场景 · 同初始帧 · 名称隐藏";
+      const sub = revealed
+        ? esc([m.vendor, clip ? clip.res : m.res, clip ? clip.dur + "s" : ""].filter(Boolean).join(" · "))
+        : "同场景 · 同初始帧 · 名称隐藏";
+      const stage = clip
+        ? `<video class="slot-video" controls preload="metadata" playsinline poster="${esc(String(clip.video).replace(/\.mp4$/, ".jpg"))}" src="${esc(clip.video)}#t=0.1"></video>`
+        : `<div class="ph"><em>会话回放占位</em><br>接入真实录屏后替换</div>`;
       return `<div class="slot ${on}" data-side="${side}">
         <div class="slot-stage">
           <span class="badge">${side}</span>
-          <div class="ph"><em>会话回放占位</em><br>接入真实录屏后替换</div>
+          ${stage}
         </div>
         <div class="slot-foot">
           <div class="who">${who}<small>${sub}</small></div>
@@ -346,8 +410,8 @@
   }
 
   function renderSummary() {
-    $("#s-n").textContent = SCENES.length + " × " + MODELS.length;
-    $("#s-n-sub").textContent = "N≤10，只做案例研究，不外推";
+    $("#s-n").textContent = SCENES.length + " 场 × 2";
+    $("#s-n-sub").textContent = "同场景内两两对打；跨场景不合并净胜率";
 
     const votes = Object.values(state.votes).filter((v) => v && (v.g || v.s || v.b));
     const n = votes.length;
@@ -417,6 +481,8 @@
       const el = e.target.closest("[data-scene]");
       if (!el) return;
       state.scene = el.dataset.scene;
+      const pair = scenePair();
+      if (pair) state.slots = { A: pair[0], B: pair[1] };
       persist();
       renderAll();
     });
@@ -552,9 +618,18 @@
     });
 
     $("#sync-btn").addEventListener("click", () => {
+      const vids = $$("#slots video");
       const btn = $("#sync-btn");
-      btn.classList.toggle("on");
-      btn.textContent = btn.classList.contains("on") ? "已对齐 0.0s" : "对齐起点";
+      if (!vids.length) { toast("本场景还没有接入录屏"); return; }
+      vids.forEach((v) => { try { v.currentTime = 0; } catch (e) {} });
+      vids.forEach((v) => { const p = v.play(); if (p && p.catch) p.catch(() => {}); });
+      btn.classList.add("on");
+      btn.textContent = "同步播放中";
+      const first = vids[0];
+      first.addEventListener("ended", () => {
+        btn.classList.remove("on");
+        btn.textContent = "对齐起点";
+      }, { once: true });
     });
 
     $("#save-btn").addEventListener("click", () => {
@@ -614,8 +689,14 @@
     booted = true;
     if (document.body.dataset.page !== "world") return;
     await loadData();
-    if (!MODELS.find((m) => m.id === state.slots.A)) state.slots.A = MODELS[0].id;
-    if (!MODELS.find((m) => m.id === state.slots.B)) state.slots.B = MODELS[1].id;
+    if (!SCENES.find((s) => s.id === state.scene)) state.scene = SCENES[0].id;
+    const pair = scenePair();
+    if (pair) {
+      state.slots = { A: pair[0], B: pair[1] };
+    } else {
+      if (!MODELS.find((m) => m.id === state.slots.A)) state.slots.A = MODELS[0].id;
+      if (!MODELS.find((m) => m.id === state.slots.B)) state.slots.B = MODELS[1].id;
+    }
     bind();
     renderAll();
   }

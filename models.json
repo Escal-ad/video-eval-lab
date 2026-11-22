@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-11-21",
+  "updated_at": "2026-11-23",
   "notes": {
     "t2v": "公开视频来自 AVGen-Bench；本站只评视觉维度，音频维度剔除，标注 original_track=T2AV。",
     "interactive": "三家均为网页可玩；Matrix-Game 4 为引擎辅助型，物理与空间状态由游戏引擎持有，需与纯生成模型分开解释，不直接比记忆/物理。",
@@ -15,7 +15,11 @@
       "country": "CN",
       "access": "网页 + API",
       "max_duration_sec": 15,
-      "resolution": ["480p", "720p", "1080p"],
+      "resolution": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
       "native_audio": true,
       "public_videos": "AVGen-Bench",
       "avgen_score": 72.07,
@@ -30,7 +34,10 @@
       "country": "CN",
       "access": "网页 + API",
       "max_duration_sec": 10,
-      "resolution": ["720p", "1080p"],
+      "resolution": [
+        "720p",
+        "1080p"
+      ],
       "native_audio": true,
       "public_videos": "AVGen-Bench",
       "avgen_score": 61.82,
@@ -45,7 +52,10 @@
       "country": "CN",
       "access": "网页 + API + 开源权重",
       "max_duration_sec": 10,
-      "resolution": ["720p", "1080p"],
+      "resolution": [
+        "720p",
+        "1080p"
+      ],
       "native_audio": true,
       "public_videos": "AVGen-Bench",
       "avgen_score": 62.97,
@@ -60,7 +70,10 @@
       "country": "US",
       "access": "网页 + API",
       "max_duration_sec": 8,
-      "resolution": ["720p", "1080p"],
+      "resolution": [
+        "720p",
+        "1080p"
+      ],
       "native_audio": true,
       "public_videos": "AVGen-Bench",
       "avgen_score": 67.87,
@@ -93,13 +106,14 @@
       "access": "官方网页 demo / 本地 4090（开源 Apache-2.0）",
       "web": true,
       "session_limit_sec": 60,
-      "resolution": "720p",
+      "resolution": "1280x704",
       "fps": 24,
       "native_audio": false,
-      "controls": "以 demo 提示为准（WASD/方向键）",
+      "controls": "两段式：prompt 生成世界 → 相机控制（WASD 位移 / 方向键转向，可录制 24fps）",
       "paradigm": "pure-generative",
       "role": "core",
-      "why": "8B / 60s / 单卡可跑；动作条件与开源复现是强项"
+      "why": "8B / 60s / 单卡可跑；动作条件与开源复现是强项",
+      "recording": true
     },
     {
       "id": "matrix-game-4",
@@ -133,6 +147,22 @@
       "paradigm": "pure-generative",
       "role": "core",
       "why": "状态转移与剧情推进是特色；网页端在 Reactor，不必用 App"
+    },
+    {
+      "id": "zing-0.5",
+      "name": "Zing-0.5",
+      "vendor": "Loopit（开源）",
+      "country": "中国",
+      "access": "Hugging Face Space（ZeroGPU 排队）/ 自部署",
+      "web": "https://huggingface.co/seedleap/zing-0.5",
+      "session_limit_sec": null,
+      "resolution": "832x480",
+      "fps": 24,
+      "native_audio": false,
+      "controls": "参考图 + 动作/文本条件（非实时漫游）",
+      "paradigm": "generative",
+      "role": "optional",
+      "why": "开源可复现；入口是 Space 排队，实时相机控制未验证"
     }
   ]
 }

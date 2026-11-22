@@ -1,0 +1,55 @@
+{
+  "schema": "velab.world-clips/1.0",
+  "updated_at": "2026-11-23",
+  "note": "四组都用同一张参考图 + 同一机位起跑；每对已裁到等时（上限 30s）。Hy-Nomas 四条的画面底部带录屏时的提示词字幕，未裁掉；Happy Oyster 两条带平台水印。",
+  "scenes": [
+    {
+      "id": "gogh-town",
+      "name": "梵高小镇",
+      "ref": "参考图：星夜石桥前的背包客",
+      "action": "沿石板路向小镇与石桥方向前进，全程第一人称",
+      "expect": "石桥拱形、房屋轮廓、两侧柏树位置不漂移；路面笔触保持梵高式旋转笔法",
+      "pair": ["hy-nomas", "zing-0.5"],
+      "clips": {
+        "hy-nomas": { "video": "assets/world/gogh-town/hy-nomas.mp4", "dur": 30.0, "res": "1280×704", "note": "crf24 转码；底部带提示词字幕" },
+        "zing-0.5": { "video": "assets/world/gogh-town/zing-0.5.mp4", "dur": 30.1, "res": "832×480", "note": "crf22 转码" }
+      }
+    },
+    {
+      "id": "ferry",
+      "name": "海边渡船",
+      "ref": "参考图：搁浅在沙滩上的巨轮",
+      "action": "原地待机并轻微调整视角，观察船体与远处的落日",
+      "expect": "船体层数、烟囱数量、舷窗排列稳定；沙滩倒影与船体阴影方向一致",
+      "pair": ["happy-oyster", "hy-nomas"],
+      "clips": {
+        "happy-oyster": { "video": "assets/world/ferry/happy-oyster.mp4", "dur": 27.5, "res": "864×480", "note": "原码流裁切；右上角平台水印" },
+        "hy-nomas": { "video": "assets/world/ferry/hy-nomas.mp4", "dur": 27.5, "res": "1280×704", "note": "crf22 转码；底部带提示词字幕" }
+      }
+    },
+    {
+      "id": "dune-sailor",
+      "name": "沙丘帆行者",
+      "ref": "参考图：沙漠里的陆地帆车与石拱门",
+      "action": "帆车在沙丘上向前滑行，镜头跟车",
+      "expect": "帆布受风形变合理、沙地车辙连续；远处拱门不消失、不漂移；逆光地面反射稳定",
+      "pair": ["happy-oyster", "hy-nomas"],
+      "clips": {
+        "happy-oyster": { "video": "assets/world/dune-sailor/happy-oyster.mp4", "dur": 24.7, "res": "864×480", "note": "原码流裁切；右上角平台水印" },
+        "hy-nomas": { "video": "assets/world/dune-sailor/hy-nomas.mp4", "dur": 24.6, "res": "1280×704", "note": "crf22 转码；底部带提示词字幕" }
+      }
+    },
+    {
+      "id": "snow-statue",
+      "name": "雪地神像",
+      "ref": "参考图：雪原上的巨型佛头与行走的小人",
+      "action": "人物在雪地向神像走近，留下连续脚印",
+      "expect": "脚印连续且深浅一致；神像发髻与面部细节不糊、不融；雪面明暗随距离变化",
+      "pair": ["hy-nomas", "zing-0.5"],
+      "clips": {
+        "hy-nomas": { "video": "assets/world/snow-statue/hy-nomas.mp4", "dur": 24.0, "res": "1280×704", "note": "crf22 转码；底部带提示词字幕" },
+        "zing-0.5": { "video": "assets/world/snow-statue/zing-0.5.mp4", "dur": 24.0, "res": "832×480", "note": "原码流裁切" }
+      }
+    }
+  ]
+}
