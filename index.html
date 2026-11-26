@@ -1,132 +1,1400 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>视频 Caption 标注 — 评估工作台</title>
-  <link rel="stylesheet" href="assets/style.css">
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
-  <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#2563eb">
-  <meta name="application-name" content="评估工作台">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频 Caption 标注 · 效果图 — 评估工作台</title>
+<style>
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --ink: #14161a;
+  --muted: #667085;
+  --line: #e4e7ec;
+  --line-strong: #d0d5dd;
+  --accent: #2563eb;
+  --accent-soft: #eef4ff;
+  --good: #0f9d58;
+  --warn: #b45309;
+  --bad: #dc2626;
+  --radius: 12px;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 14px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; letter-spacing: -0.01em; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1440px; margin: 0 auto; height: 56px;
+  display: flex; align-items: center; gap: 24px; padding: 0 24px;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+.brand-mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 800;
+}
+.nav { display: flex; align-items: center; gap: 2px; flex: 1; overflow-x: auto; }
+.nav a { padding: 7px 11px; border-radius: 8px; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.nav a:hover { background: #f2f4f7; color: var(--ink); }
+.nav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav a.off { opacity: .45; cursor: default; }
+.nav a.off:hover { background: transparent; color: var(--muted); }
+.top-actions { display: flex; align-items: center; gap: 10px; }
+.icon-btn { border: 1px solid var(--line-strong); background: #fff; border-radius: 8px; padding: 6px 11px; font-size: 12.5px; }
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- layout ---------- */
+.wrap { max-width: 1440px; margin: 0 auto; padding: 20px 24px 28px; }
+.workbench {
+  display: grid; grid-template-columns: 250px minmax(0, 1fr) 396px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; height: calc(100vh - 104px); min-height: 640px;
+}
+.col { min-width: 0; }
+.col + .col { border-left: 1px solid var(--line); }
+
+/* ---------- queue ---------- */
+.queue { padding: 14px; background: #fbfbfc; overflow-y: auto; }
+.queue-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.queue-head h3 { font-size: 13px; font-weight: 700; }
+.queue-head .count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.filters { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.chip-btn {
+  border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 3px 9px; font-size: 11px; color: var(--muted);
+}
+.chip-btn.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.task {
+  border: 1px solid var(--line); background: #fff; border-radius: 9px;
+  padding: 10px; margin-bottom: 8px; cursor: pointer; text-align: left; width: 100%;
+}
+.task:hover { border-color: #c7d2fe; }
+.task.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.task-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.task-id { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .04em; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #d0d5dd; flex: none; }
+.dot.done { background: var(--good); }
+.dot.part { background: #f59e0b; }
+.task h4 { margin-top: 5px; font-size: 13px; font-weight: 650; }
+.task .meta { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.queue-tip { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 11px; line-height: 1.7; }
+
+/* ---------- workspace ---------- */
+.workspace { padding: 16px 18px; overflow-y: auto; }
+.stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.stage-title { font-size: 16px; font-weight: 700; }
+.stage-sub { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; border-radius: 999px;
+  padding: 3px 8px; font-size: 11px; font-weight: 600; background: #f2f4f7; color: var(--muted);
+  white-space: nowrap;
+}
+.chip.demo { background: var(--accent-soft); color: var(--accent); }
+
+.video-stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px;
+  background: #0b0f17; border: 1px solid #1f2937; overflow: hidden;
+}
+.video-stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.video-stage .corner {
+  position: absolute; right: 12px; bottom: 10px; font-family: var(--mono); font-size: 10.5px;
+  color: rgba(255,255,255,.8); background: rgba(0,0,0,.45); padding: 2px 6px; border-radius: 4px;
+  pointer-events: none;
+}
+.video-stage .tl-tag {
+  position: absolute; left: 12px; top: 10px; font-family: var(--mono); font-size: 10.5px;
+  color: rgba(255,255,255,.7); background: rgba(0,0,0,.4); padding: 2px 6px; border-radius: 4px;
+  pointer-events: none;
+}
+
+/* transport */
+.transport { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line-strong); background: #fff; color: var(--ink);
+  border-radius: 8px; padding: 6px 11px; font-size: 12.5px; font-weight: 550;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.btn.primary:hover { background: #2b2f36; color: #fff; }
+.btn.small { padding: 5px 9px; font-size: 12px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled:hover { border-color: var(--line-strong); color: var(--ink); }
+.tc { font-family: var(--mono); font-size: 11.5px; color: var(--muted); padding: 0 4px; }
+.tc b { color: var(--ink); font-weight: 600; }
+.spacer { flex: 1; }
+select.speed { border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; padding: 4px 6px; font-size: 11.5px; color: var(--muted); }
+
+/* timeline */
+.timeline { margin-top: 10px; }
+.track {
+  position: relative; height: 40px; background: #f2f4f7; border-radius: 6px;
+  border: 1px solid var(--line); overflow: hidden; cursor: crosshair; touch-action: none;
+}
+.seg {
+  position: absolute; top: 5px; height: 28px; border-radius: 5px;
+  background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af;
+  font-size: 10.5px; display: flex; align-items: center; padding: 0 10px;
+  overflow: hidden; white-space: nowrap;
+}
+.seg.sel { background: #bfdbfe; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.seg .handle {
+  position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: transparent;
+}
+.seg .handle.l { left: -1px; border-left: 2px solid rgba(37,99,235,.35); }
+.seg .handle.r { right: -1px; border-right: 2px solid rgba(37,99,235,.35); }
+.seg .handle:hover { background: rgba(37,99,235,.18); }
+.playhead {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; pointer-events: none;
+}
+.playhead::before {
+  content: ""; position: absolute; top: -1px; left: -4px;
+  border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #ef4444;
+}
+.ruler { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+
+/* seg table */
+.seg-table { margin-top: 12px; border-top: 1px solid var(--line); }
+.seg-head, .seg-row {
+  display: grid; grid-template-columns: 56px 148px 1fr 108px 74px; gap: 8px; align-items: center;
+}
+.seg-head {
+  padding: 7px 2px; font-size: 10.5px; color: var(--muted); letter-spacing: .04em;
+  border-bottom: 1px solid var(--line);
+}
+.seg-row { padding: 8px 2px; border-bottom: 1px solid #f0f1f3; font-size: 12px; cursor: pointer; }
+.seg-row:hover { background: #fafbfc; }
+.seg-row.sel { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.seg-row .t { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.seg-row .c { color: #344054; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg-row .c.empty { color: #98a2b3; font-style: italic; }
+.seg-row input {
+  width: 48px; border: 1px solid var(--line-strong); border-radius: 6px;
+  padding: 3px 4px; font-family: var(--mono); font-size: 10.5px; text-align: right;
+}
+.seg-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.st {
+  font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  background: #f2f4f7; color: var(--muted); white-space: nowrap;
+}
+.st.ok { background: #e9f8f0; color: #087443; }
+.st.part { background: #fff7ed; color: var(--warn); }
+.table-tools { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.hintline { margin-top: 8px; color: var(--muted); font-size: 11px; }
+.kbdhint { font-family: var(--mono); font-size: 10.5px; color: #98a2b3; }
+
+/* ---------- panel ---------- */
+.panel { display: flex; flex-direction: column; background: #fff; min-height: 0; }
+.panel-scroll { padding: 16px 16px 22px; overflow-y: auto; flex: 1; min-height: 0; }
+.panel h3 { font-size: 13px; font-weight: 700; }
+.panel-sub { color: var(--muted); font-size: 11.5px; margin: 2px 0 6px; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; font-size: 10.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.legend .i1 { background: var(--accent-soft); border: 1px dashed #93c5fd; }
+.legend .i2 { background: var(--accent); }
+.legend .i3 { background: #fff; border: 1px dashed #98a2b3; }
+.dim { padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.dim:last-child { border-bottom: 0; }
+.dim.need { background: #fffbf5; box-shadow: inset 2px 0 0 #f59e0b; }
+.dim-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+.dim-head strong { font-size: 12.5px; font-weight: 600; }
+.dim-head .why { font-size: 10.5px; color: var(--muted); }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.chipsel {
+  border: 1px dashed var(--line-strong); background: #fff; border-radius: 7px;
+  padding: 2px 8px; font-size: 11px; color: #475467;
+}
+.chipsel:hover { border-color: #93c5fd; color: var(--accent); }
+.chipsel.pre { border-style: dashed; border-color: #93c5fd; background: var(--accent-soft); color: var(--accent); }
+.chipsel.on { border-style: solid; border-color: var(--accent); background: var(--accent); color: #fff; }
+.chipsel.none { color: #98a2b3; }
+.chipsel.none.on { border-color: #98a2b3; background: #eef1f5; color: #475467; }
+
+.field { margin-top: 12px; }
+.field label { display: block; font-size: 11.5px; font-weight: 600; color: #344054; margin-bottom: 5px; }
+.field label .tip { font-weight: 400; color: var(--muted); }
+.field textarea, .field input, .field select {
+  width: 100%; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: #fff; padding: 8px 9px; font-size: 12.5px; outline: none;
+}
+.field textarea:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+#caption { min-height: 92px; resize: vertical; }
+.ev-hint { margin-top: 5px; font-size: 11px; line-height: 1.5; color: var(--muted); }
+.ev-hint.warn { color: var(--warn); }
+.ev-hint.bad { color: var(--bad); }
+
+.prompt-block { margin-top: 12px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfe; }
+.prompt-block.none { background: #fafbfc; }
+.prompt-toggle {
+  width: 100%; display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  background: none; border: 0; padding: 8px 10px; cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--ink);
+}
+.prompt-toggle:hover { background: var(--accent-soft); border-radius: 9px; }
+.pt-label { font-size: 12px; font-weight: 600; }
+.pt-tip { font-size: 10.5px; color: var(--muted); flex: 1 1 auto; }
+.pt-caret { font-size: 10.5px; color: var(--accent); flex: 0 0 auto; }
+.prompt-body { padding: 0 10px 9px; border-top: 1px dashed var(--line); margin-top: 1px; }
+.prompt-text { margin: 8px 0 0; font-size: 11.5px; line-height: 1.65; color: #344054; white-space: pre-wrap; }
+.prompt-note { margin-top: 6px; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.prompt-note.warn { color: var(--warn); }
+.r.na { color: var(--muted); background: #f2f4f7; }
+.chk.none { opacity: .75; }
+.field input.bad { border-color: #fda29b; background: #fffbfa; }
+.inline { display: flex; gap: 8px; }
+.inline > * { flex: 1; }
+.inline .btn { flex: none; }
+.duo { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; }
+.duo > div:last-child { padding-left: 16px; border-left: 1px dashed var(--line); }
+.segctl { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.segctl button { border: 0; background: #fff; padding: 5px 11px; font-size: 11.5px; color: var(--muted); }
+.segctl button + button { border-left: 1px solid var(--line); }
+.segctl button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.note-wrap { display: none; }
+.note-wrap.show { display: block; }
+
+/* 复核说明：逐行固定框架 */
+.rrow { border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; margin-bottom: 8px; background: #fffdf7; }
+.rrow.bad { background: #fff; border-color: var(--line-strong); }
+.rrow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.rname { font-size: 12px; font-weight: 600; color: var(--ink); }
+.rdet { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rrow-body { display: flex; gap: 6px; align-items: center; width: 100%; }
+.rrow-body select.rselect { flex: 0 0 116px; width: 116px !important; height: 28px; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; font-size: 11.5px; color: var(--ink); padding: 0 4px; font-family: inherit; }
+.rselect.empty { color: #d92d20; border-color: #fda29b; background: #fffbfa; }
+.rrow-body input.rnote { flex: 1 1 auto; width: auto !important; min-width: 48px; height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 11.5px; color: var(--ink); font-family: inherit; box-sizing: border-box; }
+.rrow-body input.rts { flex: 0 0 72px; width: 72px !important; height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 4px; font-size: 11.5px; font-variant-numeric: tabular-nums; text-align: center; font-family: inherit; box-sizing: border-box; }
+.rhint { font-size: 10.5px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.rrow.miss .rselect { border-color: #fda29b; background: #fffbfa; }
+
+/* self-check */
+.selfcheck-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.lv { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px; background: #f2f4f7; color: var(--muted); white-space: nowrap; }
+.lv.ok { background: #e9f8f0; color: #087443; }
+.lv.mid { background: #fff7ed; color: var(--warn); }
+.lv.bad { background: #fef2f2; color: var(--bad); }
+.checks { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.chk { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; font-size: 11.5px; border-bottom: 1px solid #f2f4f7; }
+.chk:last-child { border-bottom: 0; }
+.chk input { width: 14px; height: 14px; margin: 2px 0 0; accent-color: var(--accent); flex: none; padding: 0; }
+.na-box { width: 14px; height: 14px; margin: 2px 0 0; flex: none; text-align: center; line-height: 13px; color: var(--muted); font-size: 11px; }
+.chk .t { flex: 1; color: #344054; line-height: 1.45; font-weight: 400; margin: 0; display: block; cursor: pointer; }
+.chk .t small { display: block; color: #98a2b3; font-size: 10px; margin-top: 1px; }
+.chk.auto .t { color: #667085; }
+.chk .r { font-size: 9.5px; white-space: nowrap; padding: 1px 6px; border-radius: 999px; background: #f2f4f7; color: var(--muted); flex: none; margin-top: 1px; }
+.chk .r.pass { background: #e9f8f0; color: #087443; }
+.chk .r.fail { background: #fef2f2; color: #b42318; }
+.lv-why { margin-top: 6px; font-size: 10.5px; color: var(--warn); line-height: 1.6; }
+.lv-why:empty { display: none; }
+.actions .btn { padding: 8px 4px; font-size: 12px; white-space: nowrap; }
+
+.panel-foot {
+  border-top: 1px solid var(--line); background: #fff; padding: 10px 16px 12px;
+  box-shadow: 0 -6px 16px rgba(16,24,40,.04);
+}
+.progress-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); }
+.progress-row b { color: var(--ink); font-family: var(--mono); }
+.bar { height: 4px; border-radius: 2px; background: #eef1f5; margin: 6px 0 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .18s ease; }
+.status-line { font-size: 10.5px; color: var(--muted); min-height: 15px; }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.actions .btn { flex: 1; }
+
+/* toast */
+#toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(8px);
+  background: #14161a; color: #fff; font-size: 12.5px; padding: 8px 14px; border-radius: 8px;
+  opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; z-index: 99;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 1280px) {
+  .workbench { grid-template-columns: 220px minmax(0, 1fr) 360px; }
+  .chipsel { padding: 2px 6px; font-size: 10.5px; }
+  .seg-head, .seg-row { grid-template-columns: 52px 140px 1fr 100px 66px; }
+  .rrow-body select.rselect { flex: 0 0 104px; width: 104px !important; font-size: 11px; }
+  .rrow-body input.rts { flex: 0 0 66px; width: 66px !important; font-size: 11px; }
+  .rrow-body input.rnote { font-size: 11px; }
+}
+@media (max-width: 1060px) {
+  .wrap { padding: 12px; }
+  .workbench { grid-template-columns: 1fr; height: auto; }
+  .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+  .queue, .workspace, .panel-scroll { max-height: none; }
+  .nav { display: none; }
+}
+</style>
 </head>
 <body data-page="caption">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
-      <nav class="nav">
-        <a data-page="caption" href="index.html">Caption 标注</a>
-        <a data-page="t2v" href="t2v.html">T2V 评测</a>
-        <a data-page="world" href="world.html">世界模型评测</a>
-        <a data-page="rag" href="rag.html">法律 RAG</a>
-        <a data-page="method" href="method.html">评测方法</a>
-        <a data-page="dims" href="dims.html">评测维度</a>
-        <a data-page="data" href="data.html">数据</a>
-        <a data-page="badcase" href="badcase.html">BadCase 归因</a>
-      </nav>
-      <div class="top-actions">
 
-        <button class="icon-btn" data-export>导出</button>
-      </div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark">VE</span><span>评估工作台</span></a>
+    <nav class="nav">
+      <a class="active" href="index.html">Caption 标注</a>
+      <a href="t2v.html">T2V 评测</a>
+      <a href="world.html">世界模型评测</a>
+      <a href="rag.html">法律 RAG</a>
+      <a href="method.html">评测方法</a>
+      <a href="dims.html">评测维度</a>
+      <a href="data.html">数据</a>
+      <a href="badcase.html">BadCase 归因</a>
+    </nav>
+    <div class="top-actions">
+      <span class="chip demo">效果图 · 仅此页</span>
+      <button class="icon-btn" id="export-btn" type="button">导出</button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <main class="wrap">
-    <div class="workbench">
-      <!-- queue -->
-      <aside class="col queue">
-        <div class="queue-head">
-          <h3>任务队列</h3>
-          <span class="count" id="q-count">0 / 0</span>
+<main class="wrap">
+  <div class="workbench">
+    <!-- ============ queue ============ -->
+    <aside class="col queue">
+      <div class="queue-head">
+        <h3>任务队列</h3>
+        <span class="count" id="q-count">0 / 0</span>
+      </div>
+      <div class="filters">
+        <button class="chip-btn on" data-filter="all" type="button">全部</button>
+        <button class="chip-btn" data-filter="todo" type="button">未完成</button>
+        <button class="chip-btn" data-filter="done" type="button">已提交</button>
+      </div>
+      <div id="queue-list"></div>
+    </aside>
+
+    <!-- ============ workspace ============ -->
+    <section class="col workspace">
+      <div class="stage-head">
+        <div>
+          <div class="stage-title" id="stage-title">—</div>
+          <div class="stage-sub" id="stage-sub">—</div>
         </div>
-        <div class="filters">
-          <button class="chip-btn on" data-filter="all">全部</button>
-          <button class="chip-btn" data-filter="todo">未完成</button>
-          <button class="chip-btn" data-filter="done">已提交</button>
+        <span class="chip demo">caption · 六维</span>
+      </div>
+
+      <div class="video-stage">
+        <video id="video" playsinline preload="metadata"></video>
+        <span class="tl-tag" id="tl-tag">caption</span>
+        <span class="corner" id="corner">00:00.0 / 00:00.0</span>
+      </div>
+
+      <div class="transport">
+        <button class="btn small" id="play-btn" type="button">▶ 播放</button>
+        <button class="btn small" id="back-btn" type="button" title="后退 0.1s">−0.1s</button>
+        <button class="btn small" id="fwd-btn" type="button" title="前进 0.1s">+0.1s</button>
+        <span class="tc"><b id="tc-now">00:00.0</b> / <span id="tc-all">00:00.0</span></span>
+        <select class="speed" id="speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.5">1.5×</option>
+        </select>
+        <span class="spacer"></span>
+        <button class="btn small" id="prev-btn" type="button">← 上一镜</button>
+        <button class="btn small" id="next-btn" type="button">下一镜 →</button>
+      </div>
+
+      <div class="timeline">
+        <div class="track" id="track"></div>
+        <div class="ruler" id="ruler"></div>
+      </div>
+
+      <div class="seg-table">
+        <div class="seg-head">
+          <span>片段</span><span>起止时间 / 秒</span><span>镜头 Caption</span><span>状态</span><span>操作</span>
         </div>
-        <div id="queue-list"></div>
-      </aside>
+        <div id="seg-rows"></div>
+      </div>
 
-      <!-- workspace -->
-      <section class="col workspace">
-        <div class="stage-head">
-          <div>
-            <div class="stage-title" id="stage-title">—</div>
-            <div class="stage-sub" id="stage-sub">—</div>
-          </div>
-          <span class="chip demo">caption · 六维</span>
+      <div class="table-tools">
+        <button class="btn small" id="local-btn" type="button">导入本地视频</button>
+        <input id="local-file" type="file" accept="video/*" hidden>
+        <button class="btn small" id="split-btn" type="button">在游标处分割</button>
+        <button class="btn small" id="merge-btn" type="button">与下一镜合并</button>
+        <span class="spacer"></span>
+        <span class="kbdhint">空格 播放 · ←→ 0.1s · Shift 一帧 · 1–6 选维度</span>
+      </div>
+      <div class="hintline">拖色块两侧的竖条改边界（改完要重新确认）；点轨道任意位置定位游标；表里时间可直接改。</div>
+    </section>
+
+    <!-- ============ panel ============ -->
+    <aside class="col panel">
+      <div class="panel-scroll">
+        <h3>六维标注</h3>
+        <div class="panel-sub">点一下即选定；N/A＝画面里没有这一项。三条案例已带示例答案，改动即变成本机草稿。</div>
+        <div class="legend">
+          <span><i class="i2"></i>已选</span>
+          <span><i class="i3"></i>N/A</span>
         </div>
-
-        <div class="video-stage">
-          <span class="stage-label">VIDEO PLACEHOLDER</span>
-          <div class="stage-center">
-            <button class="play-big" id="play-btn" type="button">▶</button>
-            <span class="stage-note">接入 clip 后，这里播放真实视频</span>
-          </div>
-          <span class="corner" id="timecode">00:00.0 / 00:00.0</span>
-        </div>
-
-        <div class="transport">
-          <button class="btn small" id="prev-btn" type="button">← 上一镜</button>
-          <button class="btn small" id="next-btn" type="button">下一镜 →</button>
-          <button class="btn small" id="local-btn" type="button">导入本地视频</button>
-          <input id="local-file" type="file" accept="video/*" hidden>
-          <span class="spacer"></span>
-          <span class="timecode">先点“导入本地视频”换素材；点击时间轴可定位</span>
-        </div>
-
-        <div class="timeline">
-          <div class="track" id="track"></div>
-          <div class="ruler" id="ruler"></div>
-        </div>
-
-        <div class="seg-table" id="seg-table"></div>
-      </section>
-
-      <!-- panel -->
-      <aside class="col panel">
-        <h3 id="panel-title">六维评分</h3>
-        <div class="panel-sub" id="panel-sub">按镜头打分；低分必须写理由</div>
         <div id="dims"></div>
 
-        <div class="field">
-          <label for="caption-text">本镜 caption</label>
-          <textarea id="caption-text" placeholder="描述这一镜的画面：主体、动作、镜头语言……"></textarea>
-        </div>
-
-        <div class="field">
-          <label for="evidence">证据时间戳</label>
-          <div class="inline">
-            <input id="evidence" placeholder="例如 00:03.4">
-            <button class="btn small" id="evidence-btn" type="button">取当前</button>
+        <div class="prompt-block" id="prompt-block">
+          <button class="prompt-toggle" id="prompt-toggle" type="button">
+            <span class="pt-label">生成提示词</span>
+            <span class="pt-tip">对照用：caption 只写画面里发生的，不写提示词里希望发生的</span>
+            <span class="pt-caret" id="pt-caret">展开</span>
+          </button>
+          <div class="prompt-body" id="prompt-body" hidden>
+            <p class="prompt-text" id="prompt-text"></p>
+            <div class="prompt-note" id="prompt-note"></div>
           </div>
         </div>
 
         <div class="field">
-          <label for="confidence">置信度</label>
-          <select id="confidence">
-            <option value="high">高 — 我能给出明确理由</option>
-            <option value="medium" selected>中 — 基本确定</option>
-            <option value="low">低 — 需要复核</option>
-          </select>
+          <label for="caption">本镜 caption <span class="tip">写画面里实际发生的</span></label>
+          <textarea id="caption" placeholder="描述这一镜的画面：主体、动作、镜头语言……"></textarea>
         </div>
 
+        <div class="field">
+          <label for="evidence">caption 锚点 <span class="tip">过程类描述才填：有顺序、有转变、有持续、有“没发生”</span></label>
+          <div class="inline">
+            <input id="evidence" placeholder="例如 00:03.4，状态类描述可留空">
+            <button class="btn small" id="evidence-btn" type="button">取当前</button>
+          </div>
+          <div class="ev-hint" id="evidence-hint">锚点指哪一秒？指“这句话最该被复核看的那一帧”，不是这句话覆盖的时间段。</div>
+        </div>
+
+        <div class="field">
+          <label>自检 <span class="tip" id="checks-tip">4 条系统核对 + 1 条人工申报，等级由规则算出</span></label>
+          <div class="checks" id="checks"></div>
+        </div>
+
+        <div class="field note-wrap" id="note-wrap">
+          <label>复核说明 <span class="tip">掉档项逐条填，交给下一个判断的人</span></label>
+          <div id="review-rows"></div>
+        </div>
+      </div>
+
+      <div class="panel-foot">
+        <div class="progress-row">
+          <span>已填 <b id="filled">0</b>/6 维</span>
+          <span class="lv" id="lv">—</span>
+        </div>
+        <div class="bar"><i id="bar"></i></div>
+        <div class="lv-why" id="lv-why"></div>
+        <div class="status-line" id="status-line">未保存</div>
         <div class="actions">
+          <button class="btn" id="export-btn2" type="button">导出 JSON</button>
           <button class="btn" id="save-btn" type="button">保存草稿</button>
-          <button class="btn primary" id="submit-btn" type="button">提交</button>
+          <button class="btn primary" id="submit-btn" type="button">提交质检</button>
         </div>
-        <div class="status-line" id="status-line"></div>
+      </div>
+    </aside>
+  </div>
+</main>
 
-        <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
-        </div>
-      </aside>
-    </div>
-  </main>
+<div id="toast"></div>
 
-  <script src="assets/app.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const BASE = 'https://escal-ad.github.io/video-eval-lab/';
+  const STORE_KEY = 've-caption-mockup-v3';
+  const FPS = 24;
+  const MIN_SEG = 0.4;
+
+  const DIMS = [
+    { key: 'tone',        name: '色调',     hint: '冷暖、饱和度',   options: ['暖调', '冷调', '中性', '高饱和', '低饱和'] },
+    { key: 'angle',       name: '拍摄角度', hint: '机位高度、方向', options: ['平视', '俯拍', '仰拍', '侧拍', '顶拍'] },
+    { key: 'composition', name: '构图',     hint: '主体位置、留白', options: ['三分法', '中心构图', '对称构图', '对角线', '框架构图'] },
+    { key: 'lighting',    name: '光影',     hint: '光源方向、对比', options: ['顺光', '侧光', '逆光', '顶光', '底光'] },
+    { key: 'size',        name: '景别',     hint: '取景范围',       options: ['远景', '全景', '中景', '近景', '特写'] },
+    { key: 'camera',      name: '运镜',     hint: '镜头运动',       options: ['固定', '推', '拉', '摇', '移'] }
+  ];
+
+  // 素材与文案来自原站 index.html / assets/caption。
+  // 三条案例已按看片结果填好标注（示例答案），改任一处即变成本机草稿。
+  const EMPTY_DIMS = {
+    tone: ['', 0], angle: ['', 0], composition: ['', 0],
+    lighting: ['', 0], size: ['', 0], camera: ['', 0]
+  };
+  const ANSWER_DIMS = d => {
+    const out = {};
+    DIMS.forEach(k => { out[k.key] = [d[k.key], 1]; });
+    return out;
+  };
+  const TASKS = [
+    {
+      id: 'cap-01', title: '低照度人物特写', file: 'cap-01_low-key.mp4',
+      meta: '实拍 · 8.5s · 单镜头', duration: 8.5, demo: true, submitted: true,
+      prompt: '3D 动画风格，幽暗奇幻森林，蓝色短发的少女身穿暗红上衣、围着深色披肩，右手握一根螺旋状木质法杖；特写，平视，固定机位，冷色调，侧光，低照度；她警觉地张望四周，随后闭眼默念，最后握紧法杖。',
+      promptNote: '示例提示词：这条素材是实拍的成片，真实提示词不在素材里；这里按画面反写了一段，只用来演示「提示词 vs caption」的对照。',
+      segments: [{
+        start: 0, end: 8.5,
+        caption: '幽暗林间，蓝发女孩先睁眼向左上方张望，随后闭眼低头；再睁眼时把木杖举过头顶，双手在胸前合拢闭眼默念；最后睁眼，将木杖横在身前，视线回到左上方。',
+        evidence: '00:04.4', note: '',
+        dims: ANSWER_DIMS({ tone: '冷调', angle: '平视', composition: '中心构图', lighting: '侧光', size: '近景', camera: '固定' }),
+        watched: 8.5, manual: true
+      }]
+    },
+    {
+      id: 'cap-02', title: '黑白餐厅对话', file: 'cap-02_restaurant.mp4',
+      meta: '实拍 · 黑白 · 11s · 单镜头', duration: 11, demo: true, submitted: true,
+      prompt: '',
+      promptNote: '这段是 1940 年代的黑白影片素材，没有生成提示词。第 5 条自检在这种情况下显示「不适用」，不用勾。',
+      segments: [{
+        start: 0, end: 11,
+        caption: '黑白餐厅里，穿浅色西装的男子侧头说话、抬手比划；戴条纹帽的女子先看着他，随后男子靠近，双手扶上她的手臂和腰侧，两人对视，女子转头看向一侧，男子也拧头看向左边再转回来。',
+        evidence: '00:05.0', note: '',
+        dims: ANSWER_DIMS({ tone: '低饱和', angle: '平视', composition: '中心构图', lighting: '侧光', size: '中景', camera: '固定' }),
+        watched: 11, manual: true
+      }]
+    },
+    {
+      id: 'cap-03', title: '雨中新叶', file: 'cap-03_rain.mp4',
+      meta: '实拍 · 11s · 单镜头', duration: 11, demo: true, submitted: true,
+      prompt: '雨后初晴，仰拍树枝与绿叶，逆光，暖色阳光穿过叶片，雨水沿枝头连续滴落，画面中部一根细横杆上挂满水珠，背景是虚化的屋瓦与树影；特写，固定机位，浅景深。',
+      promptNote: '示例提示词：这条素材是实拍成片，真实提示词不在素材里；这里按画面反写了一段，只用来演示「提示词 vs caption」的对照。',
+      segments: [{
+        start: 0, end: 11,
+        caption: '逆光下，一根粗枝和几片绿叶横在画面前景，雨水沿枝头连续滴落，画面中部一根细横杆下缘挂着连串水珠；背景是虚化的树影与屋瓦，雨丝在阳光里划出短促的亮线。',
+        evidence: '00:02.0', note: '',
+        dims: ANSWER_DIMS({ tone: '暖调', angle: '仰拍', composition: '对角线', lighting: '逆光', size: '特写', camera: '固定' }),
+        watched: 11, manual: true
+      }]
+    }
+  ];
+
+  // ---------- state ----------
+  const state = {
+    filter: 'all',
+    taskId: 'cap-01',
+    segId: 0,
+    tasks: load(),
+    savedAt: ''
+  };
+
+  function load() {
+    const base = TASKS.map(t => ({ ...t, segments: t.segments.map(normalizeSeg) }));
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return base;
+      const saved = JSON.parse(raw);
+      base.forEach(t => {
+        const s = saved[t.id];
+        if (s && Array.isArray(s.segments) && s.segments.length) {
+          t.segments = s.segments.map(normalizeSeg);
+          t.submitted = !!s.submitted;
+        }
+      });
+      return base;
+    } catch { return base; }
+  }
+  function normalizeSeg(s) {
+    const dims = cloneDims(s.dims);
+    const out = Object.assign({}, s, {
+      dims, evidence: s.evidence || '',
+      review: Array.isArray(s.review) ? s.review.map(r => ({ key: r.key || '', type: r.type || '', note: r.note || '', ts: r.ts || '' })) : [],
+      watched: Number(s.watched) || 0, manual: !!s.manual
+    });
+    if (!out.orig) { out.orig = {}; DIMS.forEach(d => { out.orig[d.key] = dims[d.key][0]; }); }
+    return out;
+  }
+  function cloneDims(d) {
+    const out = {};
+    for (const k of Object.keys(d)) out[k] = Array.isArray(d[k]) ? [d[k][0], d[k][1]] : [d[k], 1];
+    return out;
+  }
+  function persist() {
+    const payload = {};
+    state.tasks.forEach(t => { payload[t.id] = { segments: t.segments, submitted: !!t.submitted }; });
+    localStorage.setItem(STORE_KEY, JSON.stringify(payload));
+    state.savedAt = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+
+  const task = () => state.tasks.find(t => t.id === state.taskId) || state.tasks[0];
+  const seg  = () => task().segments[Math.min(state.segId, task().segments.length - 1)];
+  const $ = sel => document.querySelector(sel);
+
+  // ---------- helpers ----------
+  const fmt = s => {
+    s = Math.max(0, Number(s) || 0);
+    const m = Math.floor(s / 60), r = s - m * 60;
+    return `${String(m).padStart(2, '0')}:${r.toFixed(1).padStart(4, '0')}`;
+  };
+  function toast(msg) {
+    const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+  function dimValue(s, key) { const v = s.dims[key]; return v ? v[0] : ''; }
+  function dimConfirmed(s, key) { const v = s.dims[key]; return !!(v && v[1]); }
+  function filledCount(s) {
+    return DIMS.filter(d => {
+      const v = dimValue(s, d.key);
+      return !!v && dimConfirmed(s, d.key);
+    }).length;
+  }
+  function segStatus(s) {
+    const filled = filledCount(s);
+    if (s.boundaryTouched) return { cls: 'part', text: '边界已改 · 待确认' };
+    if (filled === 6 && s.caption.trim()) {
+      return task().submitted ? { cls: 'ok', text: '已提交' } : { cls: 'ok', text: '已标注' };
+    }
+    if (filled > 0) return { cls: 'part', text: `已填 ${filled}/6` };
+    return { cls: '', text: '待标注' };
+  }
+
+  // ---------- 生成提示词（对照用，不参与打分） ----------
+  const taskPrompt = () => String(task().prompt || '').trim();
+  function renderPrompt() {
+    const host = $('#prompt-block'), body = $('#prompt-body');
+    const p = taskPrompt();
+    host.classList.toggle('none', !p);
+    $('#pt-caret').textContent = body.hidden ? '展开' : '收起';
+    if (p) {
+      $('#prompt-text').textContent = p;
+      $('#prompt-note').textContent = task().promptNote || '';
+      $('#prompt-note').classList.remove('warn');
+    } else {
+      $('#prompt-text').textContent = '本任务没有生成提示词。';
+      $('#prompt-note').textContent = task().promptNote || '';
+      $('#prompt-note').classList.add('warn');
+    }
+  }
+
+  // ---------- 自检：申报 + 系统核对 + 规则算等级 ----------
+  const CHECKS = [
+    { key: 'watched',  kind: 'auto',   name: '完整看过这条片子',   hint: '按播放覆盖算，拖过没看的段不算' },
+    { key: 'bounds',   kind: 'auto',   name: '镜头边界核对过',     hint: '片段总长对得上素材；改过边界要重新确认' },
+    { key: 'dims',     kind: 'auto',   name: '六维都表过态',       hint: '每一维要么选一个值，要么明确选 N/A，不能留空' },
+    { key: 'na',       kind: 'auto',   name: 'N/A 用得克制',       hint: 'N/A 超过 2 维要进复核' },
+    { key: 'noinvent', kind: 'manual', name: 'caption 没照提示词补写', hint: '这一条只能自己判断，勾了即为申报' }
+  ];
+
+  function watchedPct(s) {
+    const dur = videoDuration() || task().duration || 1;
+    return Math.min(1, (Number(s.watched) || 0) / dur);
+  }
+  function segSpan() {
+    return task().segments.reduce((n, s) => n + (s.end - s.start), 0);
+  }
+  function naCount(s) { return DIMS.filter(d => dimValue(s, d.key) === 'N/A').length; }
+
+  // ---------- caption 锚点 ----------
+  // 锚点＝“这句话最该被复核看的那一帧”。状态类描述（主体/环境/光影）任意一帧可核，可不填；
+  // 过程类描述（顺序、转变、持续、否定）必须给坐标，否则复核无从下手。
+  const PROCESS_RE = /先|然后|接着|随后|最后|逐渐|渐渐|慢慢|缓缓|开始|转为|转而|一边|同时|一直|始终|继而|没有出现|未出现|从.{1,8}转为|由.{1,8}变/;
+  function processish(s) { return PROCESS_RE.test(s.caption || ''); }
+
+  function parseTS(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return { empty: true };
+    const m = s.match(/^(\d+):(\d+(?:\.\d+)?)$/) || s.match(/^(\d+(?:\.\d+)?)$/);
+    if (!m) return { bad: true };
+    const sec = m.length === 3 ? Number(m[1]) * 60 + Number(m[2]) : Number(m[1]);
+    return isFinite(sec) ? { t: sec } : { bad: true };
+  }
+  function anchorProblem(s) {
+    const r = parseTS(s.evidence);
+    if (r.empty) return null;
+    if (r.bad) return '格式不对：写成 3.4 或 00:03.4';
+    if (r.t < s.start - 0.05 || r.t > s.end + 0.05) {
+      return `落在这镜（${s.start.toFixed(2)}–${s.end.toFixed(2)}s）之外`;
+    }
+    return null;
+  }
+  function renderEvidenceHint() {
+    const s = seg();
+    const box = $('#evidence-hint');
+    const bad = anchorProblem(s);
+    const empty = !s.evidence.trim();
+    const proc = processish(s);
+    $('#evidence').classList.toggle('bad', !!bad);
+    box.classList.toggle('bad', !!bad);
+    box.classList.toggle('warn', !bad && empty && proc);
+    if (bad) {
+      box.textContent = '锚点无效 — ' + bad;
+    } else if (empty && proc) {
+      box.textContent = '这句是过程描述（有时间顺序/转变），复核需要坐标：点「取当前」指到最关键那一帧。';
+    } else if (empty) {
+      box.textContent = '状态类描述（主体、环境、光影）任意一帧可核，可以不填。';
+    } else {
+      box.textContent = '复核会按这一秒核对 caption；它指一帧，不是这段话覆盖的时间段。';
+    }
+  }
+
+  function checkPass(s, key) {
+    switch (key) {
+      case 'watched':  return watchedPct(s) >= 0.9;
+      case 'bounds':   return Math.abs(segSpan() - (videoDuration() || 0)) < 0.2 && !s.boundaryTouched;
+      case 'dims':     return filledCount(s) === 6;
+      case 'na':       return naCount(s) <= 2;
+      case 'noinvent': return taskPrompt() ? !!s.manual : true;
+      default: return true;
+    }
+  }
+  function checkDetail(s, key) {
+    switch (key) {
+      case 'watched':  return `已看 ${Math.round(watchedPct(s) * 100)}%`;
+      case 'bounds':   return `片段合计 ${segSpan().toFixed(2)}s`;
+      case 'dims':     return `已表态 ${filledCount(s)}/6 维`;
+      case 'na':       return `N/A ${naCount(s)} 维`;
+      case 'noinvent': return taskPrompt() ? (s.manual ? '已申报' : '未申报') : '本任务无提示词，不适用';
+      default: return '';
+    }
+  }
+  function levelOf(s) {
+    const items = CHECKS.map(c => ({ c, ok: checkPass(s, c.key), detail: checkDetail(s, c.key) }));
+    const failed = items.filter(i => !i.ok);
+    if (failed.length) {
+      return { code: 'revise', label: '需复核', cls: 'bad', items,
+               why: failed.filter(i => i.c.kind === 'auto').map(i => i.c.name) };
+    }
+    const soft = [];
+    if (anchorProblem(s)) soft.push('锚点无效');
+    else if (!s.evidence.trim() && processish(s)) soft.push('过程描述缺 caption 锚点');
+    if (watchedPct(s) < 0.95) soft.push('没看满整条');
+    if (soft.length) return { code: 'sample', label: '待抽检', cls: 'mid', items, why: soft };
+    return { code: 'pass', label: '可放行', cls: 'ok', items, why: [] };
+  }
+
+  // ---------- queue ----------
+  function renderQueue() {
+    const list = $('#queue-list');
+    const done = state.tasks.filter(t => t.submitted).length;
+    $('#q-count').textContent = `${done} / ${state.tasks.length}`;
+    list.innerHTML = '';
+    state.tasks.filter(t => {
+      if (state.filter === 'done') return !!t.submitted;
+      if (state.filter === 'todo') return !t.submitted;
+      return true;
+    }).forEach(t => {
+      const allFilled = t.segments.every(s => filledCount(s) === 6 && s.caption.trim());
+      const dotCls = t.submitted ? 'dot done' : (allFilled ? 'dot part' : 'dot');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'task' + (t.id === state.taskId ? ' active' : '');
+      btn.innerHTML = `
+        <div class="task-top"><span class="task-id">${t.id}</span><span class="${dotCls}"></span></div>
+        <h4>${t.title}</h4>
+        <div class="meta">${t.meta} · ${t.segments.length} 段</div>`;
+      btn.addEventListener('click', () => switchTask(t.id));
+      list.appendChild(btn);
+    });
+  }
+
+  function switchTask(id) {
+    state.taskId = id; state.segId = 0;
+    const v = $('#video');
+    v.src = BASE + 'assets/caption/' + task().file;
+    v.load();
+    renderAll();
+  }
+
+  // ---------- stage ----------
+  function renderStage() {
+    const t = task();
+    $('#stage-title').textContent = `${t.id} · ${t.title}`;
+    $('#stage-sub').textContent = `${t.meta} · 共 ${t.segments.length} 个镜头 · 当前 ${fmt(seg().start)}${t.demo ? ' · 已填示例答案，改动即变成本机草稿' : ''}`;
+    $('#tc-all').textContent = fmt(videoDuration());
+    $('#corner').textContent = `${fmt($('#video').currentTime || 0)} / ${fmt(videoDuration())}`;
+    $('#tl-tag').textContent = `${t.id} · ${t.segments.length} 镜`;
+    $('#prev-btn').disabled = state.segId <= 0;
+    $('#next-btn').disabled = state.segId >= t.segments.length - 1;
+    $('#merge-btn').disabled = state.segId >= t.segments.length - 1;
+    $('#split-btn').disabled = !canSplit();
+  }
+  function videoDuration() {
+    const v = $('#video');
+    return (v.duration && isFinite(v.duration)) ? v.duration : task().duration;
+  }
+  function canSplit() {
+    const s = seg(), t = $('#video').currentTime || 0;
+    return t > s.start + MIN_SEG && t < s.end - MIN_SEG;
+  }
+
+  // ---------- timeline ----------
+  function renderTimeline() {
+    const track = $('#track'), t = task(), dur = videoDuration() || 1;
+    track.innerHTML = '';
+    t.segments.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'seg' + (i === state.segId ? ' sel' : '');
+      el.dataset.i = i;
+      el.style.left = (s.start / dur * 100) + '%';
+      el.style.width = ((s.end - s.start) / dur * 100) + '%';
+      el.innerHTML = `<span>VS${String(i + 1).padStart(2, '0')}</span>
+        <span class="handle l" data-side="l"></span><span class="handle r" data-side="r"></span>`;
+      track.appendChild(el);
+    });
+    const ph = document.createElement('div');
+    ph.className = 'playhead'; ph.id = 'playhead';
+    ph.style.left = ((($('#video').currentTime || 0) / dur) * 100) + '%';
+    track.appendChild(ph);
+
+    const ruler = $('#ruler');
+    ruler.innerHTML = '';
+    for (let i = 0; i <= 4; i++) {
+      const sp = document.createElement('span');
+      sp.textContent = fmt(dur * i / 4);
+      ruler.appendChild(sp);
+    }
+  }
+
+  function renderSegTable() {
+    const host = $('#seg-rows');
+    host.innerHTML = '';
+    task().segments.forEach((s, i) => {
+      const st = segStatus(s);
+      const row = document.createElement('div');
+      row.className = 'seg-row' + (i === state.segId ? ' sel' : '');
+      row.innerHTML = `
+        <span class="t">VS${String(i + 1).padStart(2, '0')}</span>
+        <span class="t"><input class="in-start" value="${s.start.toFixed(2)}" inputmode="decimal"> — <input class="in-end" value="${s.end.toFixed(2)}" inputmode="decimal"></span>
+        <span class="c ${s.caption.trim() ? '' : 'empty'}">${s.caption.trim() || '（空）'}</span>
+        <span><span class="st ${st.cls}">${st.text}</span></span>
+        <span><button class="btn small" type="button">定位</button></span>`;
+      row.addEventListener('click', e => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+        selectSeg(i);
+      });
+      row.querySelector('button').addEventListener('click', () => { selectSeg(i); $('#video').currentTime = s.start; });
+      const startIn = row.querySelector('.in-start'), endIn = row.querySelector('.in-end');
+      const commit = () => {
+        let a = parseFloat(startIn.value), b = parseFloat(endIn.value);
+        if (!isFinite(a) || !isFinite(b)) { toast('时间要写数字'); renderSegTable(); return; }
+        a = Math.max(0, Math.min(a, videoDuration() - MIN_SEG));
+        b = Math.max(a + MIN_SEG, Math.min(b, videoDuration()));
+        s.start = Math.round(a * 100) / 100;
+        s.end = Math.round(b * 100) / 100;
+        s.boundaryTouched = false;
+        markDirty();
+        renderTimeline(); renderSegTable(); renderStage(); syncPanelToSeg();
+      };
+      startIn.addEventListener('change', commit);
+      endIn.addEventListener('change', commit);
+      host.appendChild(row);
+    });
+  }
+
+  function selectSeg(i) {
+    state.segId = i;
+    renderTimeline(); renderSegTable(); renderStage(); syncPanelToSeg(); renderQueue();
+  }
+
+  // drag & seek on track
+  (() => {
+    const track = $('#track');
+    let drag = null;
+    const timeAt = (clientX, rect) => Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * (videoDuration() || 1);
+
+    track.addEventListener('pointerdown', e => {
+      const rect = track.getBoundingClientRect();
+      const segEl = e.target.closest('.seg');
+      const handle = e.target.closest('.handle');
+      const t = timeAt(e.clientX, rect);
+      if (handle && segEl) {
+        const i = Number(segEl.dataset.i);
+        selectSeg(i);
+        drag = { kind: 'edge', i, side: handle.dataset.side, rect };
+      } else if (segEl) {
+        selectSeg(Number(segEl.dataset.i));
+        drag = { kind: 'seek', rect };
+        seekTo(t);
+      } else {
+        drag = { kind: 'seek', rect };
+        seekTo(t);
+      }
+      track.setPointerCapture(e.pointerId);
+    });
+    track.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const t = timeAt(e.clientX, drag.rect);
+      if (drag.kind === 'seek') { seekTo(t); return; }
+      const s = task().segments[drag.i];
+      if (drag.side === 'l') s.start = Math.min(Math.max(0, t), s.end - MIN_SEG);
+      else s.end = Math.max(Math.min(videoDuration(), t), s.start + MIN_SEG);
+      s.boundaryTouched = true;
+      renderTimeline(); renderSegTable(); renderStage();
+    });
+    const stop = () => { if (!drag) return; drag = null; markDirty(); syncPanelToSeg(); };
+    track.addEventListener('pointerup', stop);
+    track.addEventListener('pointercancel', stop);
+  })();
+
+  function seekTo(t) {
+    const v = $('#video');
+    try { v.currentTime = t; } catch {}
+    updateTimeUI();
+    renderSplitState();
+  }
+  function updateTimeUI() {
+    const v = $('#video'), dur = videoDuration() || 1;
+    $('#tc-now').textContent = fmt(v.currentTime || 0);
+    $('#corner').textContent = `${fmt(v.currentTime || 0)} / ${fmt(dur)}`;
+    const ph = document.getElementById('playhead');
+    if (ph) ph.style.left = (((v.currentTime || 0) / dur) * 100) + '%';
+  }
+
+  // ---------- panel ----------
+  function renderDims() {
+    const host = $('#dims');
+    host.innerHTML = '';
+    const s = seg();
+    DIMS.forEach((d, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'dim';
+      wrap.dataset.key = d.key;
+      const cur = dimValue(s, d.key);
+      const conf = dimConfirmed(s, d.key);
+      const chips = d.options.map(o => {
+        const on = o === cur;
+        const pre = on && !conf;
+        return `<button type="button" class="chipsel${on ? (pre ? ' pre' : ' on') : ''}" data-k="${d.key}" data-v="${o}">${o}</button>`;
+      }).join('');
+      wrap.innerHTML = `
+        <div class="dim-head"><strong><span class="mono" style="color:#98a2b3;font-size:10px">${idx + 1}</span> ${d.name}</strong><span class="why">${d.hint}</span></div>
+        <div class="chips">
+          <button type="button" class="chipsel none${cur === 'N/A' ? ' on' : ''}" data-k="${d.key}" data-v="N/A" title="画面里没有这一项，或无法判断">N/A</button>
+          ${chips}
+        </div>`;
+      host.appendChild(wrap);
+    });
+    host.onclick = null;
+  }
+
+  // 点位就地改状态，不重建 DOM（避免连点时丢事件、焦点跳动）
+  function paintDims() {
+    const s = seg();
+    document.querySelectorAll('#dims .dim').forEach(wrap => {
+      const k = wrap.dataset.key, cur = dimValue(s, k), conf = dimConfirmed(s, k);
+      wrap.querySelectorAll('.chipsel').forEach(b => {
+        const on = !!cur && b.dataset.v === cur;
+        const pre = on && !conf;
+        b.classList.toggle('on', on && !pre);
+        b.classList.toggle('pre', pre);
+      });
+    });
+  }
+
+  $('#dims').addEventListener('click', e => {
+    const b = e.target.closest('.chipsel');
+    if (!b) return;
+    const k = b.dataset.k, v = b.dataset.v, s = seg();
+    if (dimValue(s, k) === v && dimConfirmed(s, k)) s.dims[k] = ['', 0];
+    else s.dims[k] = [v, 1];
+    markDirty(); paintDims(); renderChecks(); renderNoteVisibility();
+    renderQueue(); renderSegTable(); renderProgress();
+  });
+
+  function syncPanelToSeg() {
+    const s = seg();
+    $('#caption').value = s.caption || '';
+    $('#evidence').value = s.evidence || '';
+    reviewSig = '';   // 换镜头/换任务时重建复核行
+    renderDims(); renderChecks(); renderProgress(); renderEvidenceHint(); renderNoteVisibility();
+  }
+
+  function renderChecks() {
+    const s = seg(), lv = levelOf(s);
+    const host = $('#checks');
+    host.innerHTML = '';
+    lv.items.forEach(({ c, ok, detail }) => {
+      const row = document.createElement('div');
+      const na = c.key === 'noinvent' && !taskPrompt();
+      row.className = 'chk' + (c.kind === 'auto' ? ' auto' : '') + (na ? ' none' : '');
+      const id = 'chk-' + c.key;
+      if (na) {
+        row.innerHTML = `
+          <span class="na-box">—</span>
+          <label class="t">${c.name}<small>${c.hint} · ${detail}</small></label>
+          <span class="r na">不适用</span>`;
+      } else {
+        row.innerHTML = `
+          <input type="checkbox" id="${id}" ${c.kind === 'manual' ? '' : 'disabled'} ${ok ? 'checked' : ''} data-k="${c.key}">
+          <label class="t" for="${id}">${c.name}<small>${c.hint}${c.kind === 'auto' ? ' · 系统核对：' + detail : ''}</small></label>
+          <span class="r ${ok ? 'pass' : 'fail'}">${c.kind === 'auto' ? (ok ? '通过' : '未过') : (ok ? '已勾' : '未勾')}</span>`;
+      }
+      host.appendChild(row);
+    });
+    const badge = $('#lv');
+    badge.textContent = lv.label;
+    badge.className = 'lv ' + lv.cls;
+    $('#checks-tip').textContent = taskPrompt()
+      ? '4 条系统核对 + 1 条人工申报，等级由规则算出'
+      : '4 条系统核对；本任务无提示词，第 5 条不适用';
+    $('#lv-why').textContent = lv.why.length ? '降级原因：' + lv.why.join('；') : '';
+    host.onchange = e => {
+      const cb = e.target.closest('input[data-k]');
+      if (!cb) return;
+      const k = cb.dataset.k;
+      if (k === 'noinvent') { seg().manual = cb.checked; markDirty(); renderChecks(); renderNoteVisibility(); }
+    };
+  }
+
+  // 复核说明：每条掉档项一行，原因类型固定四选一
+  const REASONS = [
+    { v: 'unclear',  t: '画面不可判',     hint: '复核可接受 N/A 改判放行', ts: false, rules: ['dims', 'na'] },
+    { v: 'unsure',   t: '我判不准',       hint: '复核自己判，或拉第三人定；必须给出该看的那一秒', ts: true, rules: ['dims', 'na', 'bounds', 'noinvent', 'evidence'] },
+    { v: 'upstream', t: '素材有问题',     hint: '打回上游，这条不进统计', ts: false, rules: ['watched', 'bounds', 'coverage'] },
+    { v: 'missed',   t: '我漏做了',       hint: '打回本人，不占复核额度', ts: false, rules: ['watched', 'bounds', 'dims', 'noinvent', 'evidence', 'coverage'] }
+  ];
+  function reasonsFor(key) { return REASONS.filter(r => r.rules.indexOf(key) >= 0); }
+
+  // 当前所有掉档项（硬项全过时，软条件也算掉档）
+  function degradedList(s) {
+    const lv = levelOf(s);
+    const out = [];
+    lv.items.filter(i => !i.ok).forEach(i => out.push({ key: i.c.key, name: i.c.name, detail: i.detail }));
+    if (!out.length) {
+      const bad = anchorProblem(s);
+      if (bad) out.push({ key: 'evidence', name: '锚点无效', detail: bad });
+      else if (!s.evidence.trim() && processish(s)) out.push({ key: 'evidence', name: '过程描述缺 caption 锚点', detail: '有先后顺序或转变，但没给复核坐标' });
+      if (watchedPct(s) < 0.95) out.push({ key: 'coverage', name: '没看满整条', detail: `已看 ${Math.round(watchedPct(s) * 100)}%` });
+    }
+    return out;
+  }
+  function reviewOf(s) {
+    if (!Array.isArray(s.review)) s.review = [];
+    return s.review;
+  }
+  function reviewEntry(s, key) {
+    const list = reviewOf(s);
+    let e = list.find(x => x.key === key);
+    if (!e) { e = { key, type: '', note: '', ts: '' }; list.push(e); }
+    return e;
+  }
+
+  let reviewSig = '';
+  function renderNoteVisibility() {
+    const s = seg();
+    const items = degradedList(s);
+    const wrap = $('#note-wrap');
+    wrap.classList.toggle('show', items.length > 0);
+    if (!items.length) { reviewSig = ''; $('#review-rows').innerHTML = ''; return; }
+
+    const sig = items.map(i => i.key).join('|');
+    const host = $('#review-rows');
+    if (sig !== reviewSig) {
+      reviewSig = sig;
+      host.innerHTML = '';
+      items.forEach(it => {
+        const e = reviewEntry(s, it.key);
+        if (e.type && !reasonsFor(it.key).some(r => r.v === e.type)) { e.type = ''; e.ts = ''; }
+        const row = document.createElement('div');
+        row.className = 'rrow';
+        row.dataset.k = it.key;
+        row.innerHTML = `
+          <div class="rrow-head"><span class="rname">${it.name}</span><span class="rdet">${it.detail}</span></div>
+          <div class="rrow-body">
+            <select class="rselect${e.type ? '' : ' empty'}" data-role="type">
+              <option value="">选原因…</option>
+              ${reasonsFor(it.key).map(r => `<option value="${r.v}"${e.type === r.v ? ' selected' : ''}>${r.t}</option>`).join('')}
+            </select>
+            <input class="rnote" data-role="note" maxlength="40" placeholder="补充一句（≤40 字）" value="${(e.note || '').replace(/"/g, '&quot;')}">
+            <input class="rts" data-role="ts" placeholder="01:23.4" value="${e.ts || ''}" style="${e.type === 'unsure' ? '' : 'display:none'}">
+          </div>
+          <div class="rhint">${reasonHint(e.type)}</div>`;
+        host.appendChild(row);
+      });
+      host.oninput = host.onchange = e => {
+        const row = e.target.closest('.rrow'); if (!row) return;
+        const role = e.target.dataset.role; if (!role) return;
+        const e2 = reviewEntry(seg(), row.dataset.k);
+        if (role === 'type') {
+          e2.type = e.target.value;
+          e.target.classList.toggle('empty', !e2.type);
+          const ts = row.querySelector('.rts');
+          ts.style.display = e2.type === 'unsure' ? '' : 'none';
+          if (e2.type !== 'unsure') { ts.value = ''; e2.ts = ''; }
+          row.querySelector('.rhint').textContent = reasonHint(e2.type);
+        } else if (role === 'note') { e2.note = e.target.value.slice(0, 40); }
+        else if (role === 'ts') { e2.ts = e.target.value; }
+        markDirty();
+      };
+    } else {
+      // 结构没变：只刷新每行的核对数字，不动输入焦点
+      items.forEach(it => {
+        const row = host.querySelector(`.rrow[data-k="${it.key}"]`);
+        if (row) row.querySelector('.rdet').textContent = it.detail;
+      });
+    }
+  }
+  function reasonHint(v) {
+    const r = REASONS.find(x => x.v === v);
+    return r ? '→ ' + r.hint : '选一个原因类型，复核据此决定打回哪里';
+  }
+  // 提交前校验：每条掉档项都要选原因；选了「我判不准」必须给时间戳
+  function reviewMissing(s) {
+    const items = degradedList(s);
+    const missing = [];
+    items.forEach(it => {
+      const e = reviewEntry(s, it.key);
+      if (!e.type) missing.push(it.name + '：没选原因');
+      else if (e.type === 'unsure' && !String(e.ts).trim()) missing.push(it.name + '：选了我判不准，但没给秒数');
+    });
+    return missing;
+  }
+
+  function renderProgress() {
+    const s = seg();
+    const filled = filledCount(s);
+    $('#filled').textContent = filled;
+    $('#bar').style.width = (filled / 6 * 100) + '%';
+  }
+
+  function markDirty() {
+    task().submitted = false;
+    $('#status-line').textContent = '有未保存修改';
+    $('#status-line').style.color = 'var(--warn)';
+    renderQueue();
+  }
+
+  // ---------- video ----------
+  const video = $('#video');
+  video.addEventListener('loadedmetadata', () => { renderStage(); renderTimeline(); updateTimeUI(); renderSegTable(); });
+  // 换素材后第一帧常常还没解码，画面是黑的：轻推一下时间轴逼它渲染
+  video.addEventListener('loadeddata', () => {
+    if (video.currentTime < 0.05) { try { video.currentTime = 0.05; } catch {} }
+  });  let lastT = 0, lastChk = 0;
+  video.addEventListener('timeupdate', () => {
+    const now = video.currentTime, delta = now - lastT;
+    lastT = now;
+    if (!video.paused && delta > 0 && delta < 0.6 * Math.max(1, video.playbackRate || 1)) seg().watched = (Number(seg().watched) || 0) + delta;
+    updateTimeUI(); renderSplitState();
+    if (performance.now() - lastChk > 900) { lastChk = performance.now(); renderChecks(); renderNoteVisibility(); }
+  });
+  video.addEventListener('play', () => { $('#play-btn').textContent = '⏸ 暂停'; });
+  video.addEventListener('pause', () => { $('#play-btn').textContent = '▶ 播放'; });
+  // 播到片尾就算看完整条，避免 timeupdate 被节流时覆盖率永远差几个点
+  video.addEventListener('ended', () => {
+    const d = videoDuration() || 0;
+    if (d && video.currentTime >= d - 0.4) seg().watched = Math.max(Number(seg().watched) || 0, d);
+    renderChecks(); renderNoteVisibility();
+  });
+  video.addEventListener('seeked', () => { updateTimeUI(); renderSplitState(); });
+
+  function renderSplitState() { $('#split-btn').disabled = !canSplit(); }
+
+  $('#play-btn').addEventListener('click', () => { video.paused ? video.play() : video.pause(); });
+  $('#back-btn').addEventListener('click', () => { video.currentTime = Math.max(0, video.currentTime - 0.1); });
+  $('#fwd-btn').addEventListener('click', () => { video.currentTime = Math.min(videoDuration(), video.currentTime + 0.1); });
+  $('#speed').addEventListener('change', e => { video.playbackRate = Number(e.target.value); });
+  $('#prev-btn').addEventListener('click', () => { if (state.segId > 0) { selectSeg(state.segId - 1); video.currentTime = seg().start; } });
+  $('#next-btn').addEventListener('click', () => { if (state.segId < task().segments.length - 1) { selectSeg(state.segId + 1); video.currentTime = seg().start; } });
+  $('#split-btn').addEventListener('click', () => {
+    const s = seg(), t = video.currentTime;
+    if (!canSplit()) return toast('游标要落在镜头内部，两侧至少 0.4s');
+    const idx = state.segId;
+    const right = { ...s, start: t, caption: '', evidence: '', dims: cloneDims(s.dims) };
+    s.end = t; s.boundaryTouched = true;
+    task().segments.splice(idx + 1, 0, right);
+    state.segId = idx + 1;
+    markDirty(); renderTimeline(); renderSegTable(); renderStage(); syncPanelToSeg();
+    toast(`已在 ${fmt(t)} 处分割`);
+  });
+  $('#merge-btn').addEventListener('click', () => {
+    const i = state.segId, arr = task().segments;
+    if (i >= arr.length - 1) return;
+    const a = arr[i], b = arr[i + 1];
+    if (a.caption.trim() && b.caption.trim()) { toast('两段都有 caption，先清空一段再合并'); return; }
+    a.end = b.end;
+    a.caption = (a.caption.trim() || b.caption).trim();
+    a.boundaryTouched = true;
+    arr.splice(i + 1, 1);
+    markDirty(); renderTimeline(); renderSegTable(); renderStage(); syncPanelToSeg();
+  });
+
+  // local import：B 方案，导入即清空，不留任何旧标注
+  $('#local-btn').addEventListener('click', () => $('#local-file').click());
+  $('#local-file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    video.src = URL.createObjectURL(f);
+    video.load();
+    const t = task();
+    t.imported = f.name;
+    t.duration = 0;
+    t.segments = [normalizeSeg({ start: 0, end: 0, caption: '', evidence: '', note: '', dims: {}, manual: false, watched: 0 })];
+    state.segId = 0;
+    video.addEventListener('loadedmetadata', function once() {
+      video.removeEventListener('loadedmetadata', once);
+      const d = video.duration || 0;
+      t.duration = d;
+      t.segments[0].end = d;
+      markDirty(); renderAll(); renderStage();
+    });
+    syncPanelToSeg(); renderProgress(); renderChecks(); renderNoteVisibility(); renderSegTable(); renderTimeline(); renderStage();
+    toast('已载入本地视频 · 六维和 caption 已清空，从零标一遍');
+  });
+
+  // ---------- fields ----------
+  $('#caption').addEventListener('input', e => {
+    seg().caption = e.target.value;
+    markDirty(); renderProgress(); renderSegTable(); renderQueue(); renderEvidenceHint();
+  });
+  $('#evidence').addEventListener('input', e => {
+    seg().evidence = e.target.value;
+    markDirty(); renderEvidenceHint(); renderChecks(); renderNoteVisibility();
+  });
+  $('#evidence-btn').addEventListener('click', () => {
+    const t = fmt(video.currentTime || 0);
+    $('#evidence').value = t; seg().evidence = t; markDirty();
+    renderEvidenceHint(); renderChecks(); renderNoteVisibility();
+    toast('已取当前 ' + t);
+  });
+
+  // ---------- save / submit ----------
+  $('#save-btn').addEventListener('click', () => {
+    persist();
+    const line = $('#status-line');
+    line.textContent = '已保存到本机 · ' + state.savedAt;
+    line.style.color = 'var(--muted)';
+    toast('草稿已保存');
+  });
+
+  $('#submit-btn').addEventListener('click', () => {
+    const s = seg();
+    const missing = DIMS.filter(d => {
+      const v = dimValue(s, d.key);
+      return !v || !dimConfirmed(s, d.key);
+    });
+    if (missing.length) {
+      document.querySelectorAll('.dim').forEach(el => {
+        const k = el.dataset.key;
+        el.classList.toggle('need', missing.some(m => m.key === k));
+      });
+      const first = document.querySelector('.dim.need');
+      if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      toast(`${missing.length} 维没判断：${missing.map(m => m.name).join('、')}`);
+      return;
+    }
+    if (!s.caption.trim()) { $('#caption').focus(); toast('caption 还是空的'); return; }
+    const ap = anchorProblem(s);
+    if (ap) { $('#evidence').focus(); toast('caption 锚点无效 — ' + ap); return; }
+    const lv = levelOf(s);
+    if (lv.code !== 'pass') {
+      const miss = reviewMissing(s);
+      if (miss.length) {
+        const first = document.querySelector('.rrow .rselect.empty');
+        if (first) { first.focus(); first.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        toast('复核说明还没填完 — ' + miss[0]);
+        return;
+      }
+    }
+    document.querySelectorAll('.dim').forEach(el => el.classList.remove('need'));
+    task().submitted = true;
+    persist();
+    renderQueue(); renderChecks();
+    const line = $('#status-line');
+    line.textContent = `已提交质检 · ${lv.label} · ${state.savedAt}`;
+    line.style.color = 'var(--good)';
+    toast(`已提交质检（${lv.label}）· 效果图不会上传任何地方`);
+  });
+
+  // ---------- export ----------
+  function exportJSON() {
+    const t = task();
+    const out = {
+      task_id: t.id,
+      title: t.title,
+      media: { file: t.file, url: BASE + 'assets/caption/' + t.file, duration_s: videoDuration(), fps: FPS },
+      prompt: t.prompt || null,
+      prompt_is_sample: !!t.promptNote,
+      shots: t.segments.map((s, i) => {
+        const lv = levelOf(s);
+        return {
+          shot_id: 'VS' + String(i + 1).padStart(2, '0'),
+          start_s: +s.start.toFixed(3), end_s: +s.end.toFixed(3),
+          caption: s.caption,
+          dims: Object.fromEntries(DIMS.map(d => [d.key, dimValue(s, d.key) || null])),
+          evidence: s.evidence,
+          self_check: {
+            declared: { no_invented_plot: !!s.manual },
+            verified: Object.fromEntries(CHECKS.map(c => [c.key, checkPass(s, c.key)])),
+            level: lv.code, level_label: lv.label, downgrade_reasons: lv.why,
+            watched_pct: Math.round(watchedPct(s) * 100) / 100
+          },
+          review: (s.review || []).filter(r => r.type && degradedList(s).some(d => d.key === r.key)).map(r => ({
+            rule: r.key,
+            reason: r.type,
+            reason_label: (REASONS.find(x => x.v === r.type) || {}).t || r.type,
+            note: r.note,
+            at_s: r.ts || null
+          }))
+        };
+      }),
+      submitted: !!t.submitted,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${t.id}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1200);
+    toast('已导出 ' + t.id + '.json');
+  }
+  $('#export-btn').addEventListener('click', exportJSON);
+  $('#export-btn2').addEventListener('click', exportJSON);
+
+  // ---------- filters ----------
+  document.querySelectorAll('[data-filter]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(x => x.classList.toggle('on', x === b));
+    state.filter = b.dataset.filter;
+    renderQueue();
+  }));
+
+  // ---------- keyboard ----------
+  document.addEventListener('keydown', e => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); return; }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const step = e.shiftKey ? 1 / FPS : 0.1;
+      video.currentTime = Math.max(0, Math.min(videoDuration(), video.currentTime + (e.key === 'ArrowRight' ? step : -step)));
+      return;
+    }
+    if (e.key === 'Enter') { video.currentTime = seg().start; return; }
+    if (/^[1-6]$/.test(e.key)) {
+      const idx = Number(e.key) - 1;
+      const el = document.querySelectorAll('.dim')[idx];
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.querySelector('.chipsel').focus(); }
+    }
+  });
+
+  // ---------- boot ----------
+  function renderAll() {
+    renderQueue(); renderStage(); renderTimeline(); renderSegTable(); syncPanelToSeg();
+    updateTimeUI(); renderProgress(); renderPrompt(); renderChecks(); renderNoteVisibility();
+  }
+
+  $('#prompt-toggle').addEventListener('click', () => {
+    const body = $('#prompt-body');
+    body.hidden = !body.hidden;
+    $('#pt-caret').textContent = body.hidden ? '展开' : '收起';
+  });
+
+  const v0 = $('#video');
+  v0.src = BASE + 'assets/caption/' + task().file;
+  v0.load();
+  renderAll();
+  v0.addEventListener('loadeddata', renderAll, { once: true });
+
+  $('#status-line').textContent = localStorage.getItem(STORE_KEY)
+    ? '已载入本机草稿 · 改完记得保存'
+    : '三条均为示例答案（已提交状态）· 改动即变成本机草稿';
+})();
+</script>
 </body>
 </html>
