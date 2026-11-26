@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>视频 Caption 标注 · 效果图 — 评估工作台</title>
+<title>视频 Caption 标注 · 评估工作台</title>
 <style>
 :root {
   --bg: #f5f6f8;
@@ -359,7 +359,7 @@ select.speed { border: 1px solid var(--line-strong); border-radius: 7px; backgro
       <a href="badcase.html">BadCase 归因</a>
     </nav>
     <div class="top-actions">
-      <span class="chip demo">效果图 · 仅此页</span>
+      <span class="chip demo">演示 · 数据存本机</span>
       <button class="icon-btn" id="export-btn" type="button">导出</button>
     </div>
   </div>
@@ -1298,7 +1298,7 @@ select.speed { border: 1px solid var(--line-strong); border-radius: 7px; backgro
     const line = $('#status-line');
     line.textContent = `已提交质检 · ${lv.label} · ${state.savedAt}`;
     line.style.color = 'var(--good)';
-    toast(`已提交质检（${lv.label}）· 效果图不会上传任何地方`);
+    toast(`已提交质检（${lv.label}）· 数据只存在本机浏览器`);
   });
 
   // ---------- export ----------
