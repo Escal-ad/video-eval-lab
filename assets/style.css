@@ -577,3 +577,87 @@ code, .mono { font-family: var(--mono); }
   background: #fff8f6; color: #b5473b; font-size: 11px;
 }
 @media (max-width: 520px) { .tip { width: calc(100vw - 20px); } }
+
+/* ===== t2v transport bar (Annota-style) ===== */
+.abbar { display: flex; align-items: center; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
+.abbar .spacer { flex: 1; }
+.abbar .tread {
+  font-family: var(--mono); font-size: 12px; color: var(--ink); letter-spacing: .01em;
+  background: #f8f9fb; border: 1px solid var(--line); border-radius: 6px;
+  padding: 5px 9px; white-space: nowrap;
+}
+.mini-select {
+  border: 1px solid var(--line-strong); border-radius: 6px; background: #fff;
+  padding: 5px 7px; font-size: 11.5px; color: var(--ink); outline: none; cursor: pointer;
+}
+.mini-select:hover { border-color: var(--accent); }
+.mini-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* timeline：跟 caption 页同一套轨道语言（色块 + 红色游标 + 刻度） */
+.ab-timeline { margin-top: 10px; }
+.ab-track {
+  position: relative; height: 40px; background: #f2f4f7; border: 1px solid var(--line);
+  border-radius: 6px; overflow: hidden; cursor: crosshair; touch-action: none;
+}
+.ab-seg {
+  position: absolute; top: 5px; bottom: 5px; left: 0; right: 0;
+  border-radius: 4px; background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af;
+  font-size: 10.5px; display: flex; align-items: center; padding: 0 10px;
+  overflow: hidden; white-space: nowrap;
+}
+.ab-playhead {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444;
+  pointer-events: none; transform: translateX(-1px); z-index: 2;
+}
+.ab-playhead::before {
+  content: ""; position: absolute; top: -1px; left: -4px;
+  border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #ef4444;
+}
+.ab-ruler {
+  position: relative; height: 13px; margin-top: 5px;
+  font-family: var(--mono); font-size: 9.5px; color: var(--muted);
+}
+.ab-ruler span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.ab-ruler span:first-child { transform: none; }
+.ab-ruler span:last-child { transform: translateX(-100%); }
+.ab-foot { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ab-foot .spacer { flex: 1; }
+.ab-hint { color: var(--muted); font-size: 10.5px; margin-top: 0; }
+.abbar .btn { padding: 5px 10px; font-size: 11.5px; }
+.abbar .mini-select { padding: 4px 6px; font-size: 11px; }
+.abbar .tread { padding: 4px 8px; font-size: 11.5px; }
+.abbar #tp-play { background: var(--accent); border-color: var(--accent); color: #fff; }
+.abbar #tp-play:hover { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+/* —— 逐维 A/B 证据评分（按 Annota 的「按片段证据评分」） —— */
+.dim-ab { display: flex; gap: 10px; margin-top: 6px; align-items: flex-start; }
+.ab-side { flex: 1 1 0; min-width: 0; }
+.ab-side-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 4px; min-height: 15px; }
+.ab-tag {
+  width: 16px; height: 16px; border-radius: 5px; background: #eef2f7; color: #475467;
+  font-family: var(--mono); font-size: 10px; display: grid; place-items: center;
+}
+.ab-ts-val { font-family: var(--mono); font-size: 9.5px; color: var(--accent); }
+.ab-side .dim-select { margin-top: 0; padding: 5px 6px; font-size: 11.5px; border-radius: 7px; }
+.ab-note {
+  width: 100%; margin-top: 5px; border: 1px solid var(--line-strong); border-radius: 7px;
+  background: #fff; padding: 5px 6px; font-size: 11px; line-height: 1.45; outline: none;
+  min-height: 42px; resize: vertical;
+}
+.ab-note:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ab-ts {
+  width: 100%; margin-top: 4px; padding: 3px 4px; border: 1px dashed var(--line-strong);
+  border-radius: 6px; background: #fff; color: var(--muted); font-size: 10px; cursor: pointer;
+}
+.ab-ts:hover { border-color: var(--accent); color: var(--accent); }
+.ab-side.need-note .ab-note { border-color: #f0a9a9; background: #fff8f8; }
+.ab-side.need-note .ab-note::placeholder { color: #c2685f; }
+
+/* 面板底部按钮常驻可见 + 维度块紧凑一点 */
+.panel .actions {
+  position: sticky; bottom: -16px; z-index: 3;
+  margin: 14px -16px -16px; padding: 10px 16px 14px;
+  background: #fff; border-top: 1px solid var(--line);
+}
+.dim { padding: 8px 0; }
+.ab-note { min-height: 38px; }
+.ab-ts { padding: 2px 4px; }

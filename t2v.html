@@ -39,9 +39,6 @@
       <aside class="col case-list">
         <div class="queue-head"><h3>评测案例</h3><span class="count">2</span></div>
         <div id="case-list"></div>
-        <div style="margin-top:14px;">
-          <a class="btn small" href="dims.html#t2v" style="width:100%;">看评分锚点</a>
-        </div>
       </aside>
 
       <section class="col workspace">
@@ -63,55 +60,71 @@
             <span class="pair-label">候选 1</span><select class="pair-select" id="pair-a" aria-label="候选 1"></select>
             <span class="pair-label">候选 2</span><select class="pair-select" id="pair-b" aria-label="候选 2"></select>
           </div>
-          <button class="btn small" id="sync-btn" type="button">同步播放</button>
           <span class="spacer"></span>
           <span class="hint">同 prompt、同时长、同分辨率；只评视觉</span>
         </div>
 
         <div class="t2v-grid" id="grid"></div>
 
+        <div class="abbar" id="abbar">
+          <button class="btn small" id="tp-play" type="button">▶ 播放</button>
+          <button class="btn small" id="tp-back" type="button" title="后退 0.1 秒">−0.1s</button>
+          <button class="btn small" id="tp-fwd" type="button" title="前进 0.1 秒">+0.1s</button>
+          <button class="btn small" id="tp-home" type="button">回到开头</button>
+          <span class="tread" id="tp-read">00:00.000 / 00:05.000</span>
+          <select class="mini-select" id="tp-rate" aria-label="倍速">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+          </select>
+        </div>
+        <div class="ab-timeline">
+          <div class="ab-track" id="tp-track" aria-label="播放进度">
+            <div class="ab-seg" id="tp-seg">—</div>
+            <div class="ab-playhead" id="tp-playhead"></div>
+          </div>
+          <div class="ab-ruler" id="tp-ruler"></div>
+        </div>
+        <div class="ab-foot">
+          <span class="ab-hint" id="tp-hint">共同区间 0–5.000 秒 · 到结尾同时停止</span>
+          <span class="spacer"></span>
+          <select class="mini-select" id="tp-audio" aria-label="音频">
+            <option value="stereo" selected>双声道</option>
+            <option value="a">只听 A</option>
+            <option value="b">只听 B</option>
+            <option value="mute">静音</option>
+          </select>
+          <select class="mini-select" id="tp-align" aria-label="对齐模式">
+            <option value="common" selected>共同区间同步</option>
+            <option value="full">各自全片检查</option>
+          </select>
+        </div>
+
         <div class="note" id="case-note" style="margin-top:14px;">
           <strong>本组结论（揭盲后生成）：</strong>
           <span id="case-conclusion">—</span>
         </div>
-
-        <div class="note" id="ab-hint" style="margin-top:12px;">
-          <strong>盲测顺序：</strong>先分别给 A/B 打分（两侧独立，不互相参考），再投整体判断；投票后揭盲。A/B 标签随机绑定模型、卡片固定 A 左 B 右，结论只对应该组。
-        </div>
       </section>
 
       <aside class="col panel">
-        <h3 id="model-title">评分</h3>
-        <div class="panel-sub" id="model-sub">选择左侧任意模型开始</div>
+        <h3 id="model-title">按片段证据评分</h3>
+        <div class="panel-sub" id="model-sub">1 明显不符，3 大体满足，5 完整稳定；未检查留空，低于 3 分需理由。</div>
         <div id="dims"></div>
 
-        <div class="field">
-          <label for="evidence">证据时间戳</label>
-          <input id="evidence" placeholder="例如 00:02.1">
-        </div>
-
-        <div class="field">
-          <label for="reason">低分理由 / 失败模式</label>
-          <textarea id="reason" placeholder="例如：第 3 秒招牌文字从「24」变成「2A」；纸杯黏连未散开。"></textarea>
-        </div>
-
         <div class="vote-box hidden" id="vote-box">
-          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后揭盲</span></div>
+          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后投整体</span></div>
           <div class="vote-row">
             <button class="vote-btn" type="button" data-vote="G">A 更好</button>
             <button class="vote-btn" type="button" data-vote="S">持平</button>
             <button class="vote-btn" type="button" data-vote="B">B 更好</button>
           </div>
-          <button class="btn small ghost" type="button" id="reveal-btn" style="width:100%;margin-top:8px;">揭盲看 A/B</button>
           <div class="vote-result" id="vote-result">两侧各 0/5 维</div>
           <div class="vote-deltas" id="vote-deltas"></div>
         </div>
 
         <div class="actions">
-          <button class="btn primary" id="save-btn" type="button">保存本模型评分</button>
-        </div>
-        <div style="margin-top:12px;">
-          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
+          <button class="btn" id="export-btn" type="button">导出 JSON</button>
+          <button class="btn" id="save-btn" type="button">保存草稿</button>
         </div>
       </aside>
     </div>
