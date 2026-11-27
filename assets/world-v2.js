@@ -2,7 +2,7 @@
    与 v1 的三点不同：
    1. 维度有第三态 N/A（不可比），必须选原因，不进均分、不进多数票
    2. 能力矩阵 + 模型档案：先说「这组能比什么」，再打分
-   3. 每题结论 verdict + 会话成本（实时流按会话存活计费）
+   3. 逐维 A/B 证据：每维两侧各一个下拉 + 依据 + 记录时间戳
    数据优先读 models.json / cases.json；失败（file:// 打开）用内置兜底。 */
 (() => {
   "use strict";
@@ -175,10 +175,8 @@
     scene: "S02",
     side: "A",
     slots: { A: "hy-nomas", B: "happy-oyster" },
-    rater: "r1",
     cells: {},
     votes: {},
-    verdicts: {},
   });
 
   let state = fresh();
@@ -213,6 +211,7 @@
     const k = state.scene + "|" + modelId;
     if (!state.cells[k]) state.cells[k] = { dims: {}, na: {}, fields: {} };
     if (!state.cells[k].fields) state.cells[k].fields = {};
+    if (!state.cells[k].notes) state.cells[k].notes = {};
     return state.cells[k];
   }
   const cellOf = (side) => modelCell(state.slots[side]);
@@ -301,81 +300,371 @@
     return !!(state.votes[pairKey()] || {}).revealed;
   }
 
+  /* ---------------- 播放器：caption 式时间轴 ---------------- */
+
+  const T = { time: 0, playing: false, rate: 1, fps: 24, raf: 0, keybound: false };
+
+  const slotVids = () => Array.prototype.slice.call(document.querySelectorAll("#slots video"));
+  const durOf = (v) => (v && Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0);
+  const spanOf = () => {
+    const ds = slotVids().map(durOf).filter((d) => d > 0);
+    return ds.length ? Math.min.apply(null, ds) : 0;
+  };
+  const tcOf = (sec) => {
+    const s = Math.max(0, sec || 0);
+    const m = Math.floor(s / 60);
+    const r = s - m * 60;
+    const w = Math.floor(r);
+    const ms = Math.round((r - w) * 1000);
+    return String(m).padStart(2, "0") + ":" + String(w).padStart(2, "0") + "." + String(ms).padStart(3, "0");
+  };
+  function rulerTicks(total) {
+    const step = total <= 8 ? 1 : total <= 20 ? 2 : 5;
+    const out = [];
+    for (let t = 0; t < total - 0.02; t += step) out.push(t);
+    out.push(total);
+    return out;
+  }
+
+  function paintTransport() {
+    const total = spanOf();
+    const pos = Math.max(0, Math.min(T.time, total || 0));
+    const read = $("#tp-read");
+    if (read) read.textContent = tcOf(pos) + " / " + tcOf(total);
+    const head = $("#tp-playhead");
+    if (head) head.style.left = (total > 0 ? (pos / total) * 100 : 0) + "%";
+    const ruler = $("#tp-ruler");
+    if (ruler && ruler.dataset.total !== String(total)) {
+      ruler.dataset.total = String(total);
+      ruler.innerHTML = rulerTicks(total)
+        .map((t) => `<span style="left:${total > 0 ? (t / total) * 100 : 0}%">${tcOf(t)}</span>`)
+        .join("");
+    }
+    const seg = $("#tp-seg");
+    if (seg) seg.textContent = sceneOf(state.scene).name;
+    const hint = $("#tp-hint");
+    if (hint) {
+      hint.textContent = total > 0
+        ? `共同区间 0–${total.toFixed(3)} 秒 · 帧步 1/${T.fps} 秒 · 空格播放，←→ 走一帧`
+        : "本场景还没有可用的片段";
+    }
+    const play = $("#tp-play");
+    if (play) play.textContent = T.playing ? "⏸ 暂停" : "▶ 播放";
+  }
+
+  function seekAll(t) {
+    const total = spanOf();
+    T.time = Math.max(0, total > 0 ? Math.min(t, total) : t);
+    slotVids().forEach((v) => {
+      try { v.currentTime = Math.min(T.time, durOf(v) || T.time); } catch (e) {}
+    });
+    paintTransport();
+    paintCompare(true);
+  }
+
+  function pauseAll() {
+    T.playing = false;
+    cancelAnimationFrame(T.raf);
+    slotVids().forEach((v) => { try { v.pause(); } catch (e) {} });
+    paintTransport();
+    paintCompare(true);
+  }
+
+  function probeFps(v) {
+    if (!v || !v.requestVideoFrameCallback) return;
+    let last = -1;
+    const deltas = [];
+    const step = (now, meta) => {
+      if (last >= 0) {
+        const d = meta.mediaTime - last;
+        if (d > 0.005 && d < 0.2) deltas.push(d);
+      }
+      last = meta.mediaTime;
+      if (deltas.length >= 8) {
+        deltas.sort((a, b) => a - b);
+        const med = deltas[Math.floor(deltas.length / 2)];
+        if (med > 0) {
+          const fps = Math.round(1 / med);
+          if (fps >= 12 && fps <= 60 && fps !== T.fps) { T.fps = fps; paintTransport(); }
+        }
+        return;
+      }
+      if (T.playing) v.requestVideoFrameCallback(step);
+    };
+    v.requestVideoFrameCallback(step);
+  }
+
+  function startTick() {
+    const vs = slotVids();
+    if (!vs.length) return;
+    const lead = vs[0];
+    cancelAnimationFrame(T.raf);
+    const tick = () => {
+      if (!T.playing) return;
+      const total = spanOf();
+      T.time = Math.max(0, Math.min(lead.currentTime, total || lead.currentTime));
+      vs.forEach((v) => {
+        if (v !== lead && !v.paused && Math.abs(v.currentTime - lead.currentTime) > 0.12) {
+          try { v.currentTime = lead.currentTime; } catch (e) {}
+        }
+      });
+      paintTransport();
+      paintCompare(false);
+      if (total > 0 && T.time >= total - 0.03) { seekAll(total); pauseAll(); return; }
+      T.raf = requestAnimationFrame(tick);
+    };
+    T.raf = requestAnimationFrame(tick);
+  }
+
+  function playAll() {
+    const vs = slotVids();
+    if (!vs.length || !spanOf()) { toast("本场景还没有可用的片段"); return; }
+    if (T.time >= spanOf() - 0.02) T.time = 0;
+    T.playing = true;
+    vs.forEach((v) => {
+      try {
+        v.currentTime = Math.min(T.time, durOf(v) || T.time);
+        v.playbackRate = T.rate;
+      } catch (e) {}
+      const p = v.play();
+      if (p && p.catch) p.catch(() => {});
+    });
+    probeFps(vs[0]);
+    startTick();
+    paintTransport();
+  }
+
+  function stepFrames(n) {
+    pauseAll();
+    seekAll(T.time + n / T.fps);
+  }
+
+  function bindTransport() {
+    const play = $("#tp-play");
+    const back = $("#tp-back");
+    const fwd = $("#tp-fwd");
+    const home = $("#tp-home");
+    const rate = $("#tp-rate");
+    const track = $("#tp-track");
+    if (play) play.onclick = () => (T.playing ? pauseAll() : playAll());
+    if (back) back.onclick = () => stepFrames(-1);
+    if (fwd) fwd.onclick = () => stepFrames(1);
+    if (home) home.onclick = () => { pauseAll(); seekAll(0); };
+    if (rate) {
+      rate.onchange = (e) => {
+        T.rate = Number(e.target.value) || 1;
+        slotVids().forEach((v) => { try { v.playbackRate = T.rate; } catch (err) {} });
+      };
+    }
+    if (track) {
+      const jump = (e) => {
+        const r = track.getBoundingClientRect();
+        if (!r.width) return;
+        const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        pauseAll();
+        seekAll(x * spanOf());
+      };
+      track.onpointerdown = (e) => {
+        e.preventDefault();
+        jump(e);
+        const move = (ev) => jump(ev);
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      };
+    }
+    if (!T.keybound) {
+      T.keybound = true;
+      document.addEventListener("keydown", (e) => {
+        const tag = (e.target.tagName || "").toUpperCase();
+        if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].indexOf(tag) >= 0) return;
+        if (e.key === "ArrowLeft") { e.preventDefault(); stepFrames(-1); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); stepFrames(1); }
+        else if (e.key === " ") { e.preventDefault(); if (T.playing) pauseAll(); else playAll(); }
+      });
+    }
+  }
+
+  /* ---------------- 同位姿取帧 ---------------- */
+
+  const CMP = { base: {}, cur: {}, ready: {}, last: 0 };
+
+  function small(side, key) {
+    if (!CMP[key][side]) {
+      const c = document.createElement("canvas");
+      c.width = 64;
+      c.height = 36;
+      CMP[key][side] = c;
+    }
+    return CMP[key][side];
+  }
+
+  function baseBlank(canvas) {
+    const d = canvas.getContext("2d").getImageData(0, 0, 64, 36).data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] + d[i + 1] + d[i + 2] + d[i + 3] > 0) return false;
+    }
+    return true;
+  }
+
+  function captureBase(side, v) {
+    if (!v || !v.videoWidth || v.readyState < 2) return;
+    const c = small(side, "base");
+    c.getContext("2d").drawImage(v, 0, 0, 64, 36);
+    if (baseBlank(c)) return;
+    const full = document.querySelector('[data-frame="' + side + '0"]');
+    if (full) full.getContext("2d").drawImage(v, 0, 0, full.width, full.height);
+    CMP.ready[side] = true;
+  }
+
+  function paintCompare(force) {
+    const now = performance.now();
+    if (!force && now - CMP.last < 120) return;
+    CMP.last = now;
+    const vs = slotVids();
+    ["A", "B"].forEach((side, i) => {
+      const v = vs[i];
+      if (!v || !v.videoWidth) return;
+      if (!CMP.ready[side] && v.readyState >= 2 && v.currentTime < 0.12) captureBase(side, v);
+      const full = document.querySelector('[data-frame="' + side + 't"]');
+      if (full) full.getContext("2d").drawImage(v, 0, 0, full.width, full.height);
+      const tLab = document.querySelector('[data-t="' + side + '"]');
+      if (tLab) tLab.textContent = tcOf(v.currentTime);
+      const lab = document.querySelector('[data-diff="' + side + '"]');
+      if (!CMP.ready[side]) { if (lab) lab.textContent = "—"; return; }
+      const cur = small(side, "cur");
+      cur.getContext("2d").drawImage(v, 0, 0, 64, 36);
+      const a = small(side, "base").getContext("2d").getImageData(0, 0, 64, 36).data;
+      const b = cur.getContext("2d").getImageData(0, 0, 64, 36).data;
+      let sum = 0;
+      for (let k = 0; k < a.length; k += 4) {
+        sum += Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]);
+      }
+      const pct = (sum / (64 * 36 * 3 * 255)) * 100;
+      if (lab) lab.textContent = "差异 " + pct.toFixed(1) + "%";
+    });
+  }
+
+  let slotsKey = "";
+
+  function chipOf(side) {
+    const c = cellOf(side);
+    const avg = avgOf(c);
+    const n = numDims(c).length;
+    const naN = naDims(c).length;
+    return avg === null ? "—" : "均分 " + avg.toFixed(2) + " · " + n + "/" + DIMS.length + (naN ? " · " + naN + " N/A" : "");
+  }
+
   function renderSlots() {
     const revealed = revealedNow();
     const sides = ["A", "B"];
-    $("#slots").className = "world-grid two-col";
-    $("#slots").innerHTML = sides.map((side) => {
+    const key = state.scene + "|" + state.slots.A + "~" + state.slots.B;
+    const host = $("#slots");
+    /* 只换分数胶囊，不重建 <video>：重建会打断播放与取帧 */
+    if (key === slotsKey && host.children.length === 2) {
+      sides.forEach((side, i) => {
+        const chip = host.children[i].querySelector(".avg");
+        if (chip) chip.textContent = chipOf(side);
+      });
+      return;
+    }
+    slotsKey = key;
+    host.className = "world-grid two-col";
+    host.innerHTML = sides.map((side) => {
       const m = modelOf(state.slots[side]);
-      const c = cellOf(side);
       const clip = clipOf(m.id);
-      const avg = avgOf(c);
-      const n = numDims(c).length;
-      const naN = naDims(c).length;
-      const on = state.side === side ? "selected" : "";
       const who = revealed ? esc(m.name) : "模型 " + side;
       const sub = revealed
         ? esc([m.vendor, clip ? clip.res : m.res, clip ? clip.dur + "s" : ""].filter(Boolean).join(" · "))
         : "同场景 · 同初始帧 · 名称隐藏";
       const stage = clip
-        ? `<video class="slot-video" controls preload="metadata" playsinline poster="${esc(String(clip.video).replace(/\.mp4$/, ".jpg"))}" src="${esc(clip.video)}#t=0.1"></video>`
+        ? `<video class="slot-video" controls preload="auto" playsinline poster="${esc(String(clip.video).replace(/\.mp4$/, ".jpg"))}" src="${esc(clip.video)}"></video>`
         : `<div class="ph"><em>会话回放占位</em><br>接入真实录屏后替换</div>`;
-      return `<div class="slot ${on}" data-side="${side}">
+      return `<div class="slot" data-side="${side}">
         <div class="slot-stage">
           <span class="badge">${side}</span>
           ${stage}
         </div>
         <div class="slot-foot">
           <div class="who">${who}<small>${sub}</small></div>
-          <div class="avg">${avg === null ? "—" : "均分 " + avg.toFixed(2)} · ${n}/${DIMS.length}${naN ? " · " + naN + " N/A" : ""}</div>
+          <div class="avg">${chipOf(side)}</div>
         </div>
       </div>`;
     }).join("");
+
+    slotVids().forEach((v, i) => {
+      const side = sides[i];
+      v.addEventListener("loadedmetadata", () => paintTransport());
+      v.addEventListener("durationchange", () => paintTransport());
+      v.addEventListener("loadeddata", () => {
+        paintTransport();
+        if (v.currentTime < 0.12) captureBase(side, v);
+        paintCompare(true);
+      });
+      v.addEventListener("seeked", () => {
+        if (v.currentTime < 0.1) captureBase(side, v);
+        if (!T.playing) { T.time = Math.min(v.currentTime, spanOf()); paintTransport(); paintCompare(true); }
+      });
+      v.addEventListener("play", () => { if (!T.playing) { T.playing = true; startTick(); paintTransport(); } });
+      v.addEventListener("pause", () => { if (v.isConnected && T.playing && !v.ended) pauseAll(); });
+      v.addEventListener("ended", () => { if (T.playing) pauseAll(); });
+    });
+
+    T.time = 0;
+    bindTransport();
+    paintTransport();
+    paintCompare(true);
+    /* 首帧解码有延迟：抓不到基准帧就多试几次，抓到了就停 */
+    let tries = 0;
+    const retry = window.setInterval(() => {
+      tries += 1;
+      paintTransport();
+      paintCompare(true);
+      const vs = slotVids();
+      const done = vs.every((v, i) => CMP.ready[sides[i]]);
+      if (done || tries > 20 || !vs.length) window.clearInterval(retry);
+    }, 300);
+  }
+
+  function scoreSelect(side, d) {
+    const c = cellOf(side);
+    const v = c.dims[d.key];
+    const na = c.na[d.key];
+    const sel = na ? "na" : typeof v === "number" ? String(v) : "";
+    return [["", "待检查"], ["1", "1"], ["3", "3"], ["5", "5"], ["na", "N/A"]]
+      .map((o) => `<option value="${o[0]}"${sel === o[0] ? " selected" : ""}>${o[1]}</option>`)
+      .join("");
+  }
+
+  function sideBlock(side, d) {
+    const c = cellOf(side);
+    const note = c.notes[d.key] || {};
+    const na = c.na[d.key];
+    const lowNoNote = typeof c.dims[d.key] === "number" && c.dims[d.key] < 3 && !String(note.note || "").trim();
+    return `<div class="ab-side${lowNoNote ? " need-note" : ""}" data-side="${side}">
+      <div class="ab-side-head"><span class="ab-tag">${side}</span><span class="ab-ts-val">${note.ts == null ? "" : tcOf(note.ts)}</span></div>
+      <select class="dim-score" data-side="${side}" data-dim="${d.key}" aria-label="${esc(d.name)} ${side} 分">${scoreSelect(side, d)}</select>
+      ${na ? `<select class="na-reason-sel" data-side="${side}" data-reason="${d.key}">${NA_REASONS.map((r) => `<option${r === na ? " selected" : ""}>${esc(r)}</option>`).join("")}</select>` : ""}
+      <textarea class="ab-note" data-side="${side}" data-dim="${d.key}" placeholder="${side} 的依据；低分必填">${esc(note.note || "")}</textarea>
+      <button class="ab-ts" type="button" data-stamp="${side}" data-dim="${d.key}">⏱ 记录时间</button>
+    </div>`;
   }
 
   function renderDims() {
-    const c = currentCell();
-    const m = currentModel();
-    seedInto(m, c);
-    const baseNa = m.na || {};
-    const revealed = revealedNow();
+    ["A", "B"].forEach((side) => seedInto(modelOf(state.slots[side]), cellOf(side)));
 
-    $$("#side-switch button").forEach((b) => b.classList.toggle("on", b.dataset.side === state.side));
-
-    $("#panel-title").textContent = "评分：" + state.side + (revealed ? "（" + m.name + "）" : "（名称隐藏）");
-    $("#model-sub").textContent = "点 A/B 切换评分侧；两侧都评完再揭盲";
-
-    $("#dims").innerHTML = DIMS.map((d) => {
-      const v = c.dims[d.key];
-      const na = c.na[d.key];
-      const preset = baseNa[d.key] && baseNa[d.key] === na;
-      return `<div class="dim ${na ? "na-on" : ""}" data-dim="${d.key}">
+    $("#dims").innerHTML = DIMS.map((d) => `<div class="dim" data-dim="${d.key}">
         <div class="dim-head"><strong>${esc(d.name)}</strong>${(window.VELAB_TIPS && window.VELAB_TIPS[d.key]) ? `<button class="q" type="button" data-tip="${d.key}" aria-label="维度说明" title="看定义与观察点">?</button>` : ""}<span class="why">${esc(d.why)}</span></div>
-        <div class="score-row">
-          ${SCALE.map((n) => `<button class="score-btn ${v === n ? "on" : ""}" type="button" data-val="${n}" title="${SCALE_HINT[n]}">${n}</button>`).join("")}
-          <button class="na-btn ${na ? "on" : ""}" type="button" data-na="1" title="这一维对该模型不成立">N/A</button>
-        </div>
-        ${na ? `<div class="na-reason"><select data-reason="1">${NA_REASONS.map((r) => `<option ${r === na ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></div>` : ""}
-        ${preset ? `<div class="na-hint">能力矩阵标记为不可比：${esc(na)}。其余维度照评，这一格不进均分、不进多数票。</div>` : ""}
-      </div>`;
-    }).join("");
+        <div class="dim-ab">${sideBlock("A", d)}${sideBlock("B", d)}</div>
+      </div>`).join("");
 
-    const over = naDims(c).length * 2 > DIMS.length;
-    $("#na-warn").innerHTML = over
-      ? `<div class="na-hint">N/A 已超过一半：这一条对该模型作废，整行不产生 GSB，改为「不可比 case」。</div>`
+    const over = ["A", "B"].filter((s) => naDims(cellOf(s)).length * 2 > DIMS.length);
+    $("#na-warn").innerHTML = over.length
+      ? `<div class="na-hint">${over.join("、")} 的 N/A 已超过一半：这一条对该模型作废，整行不产生 GSB，记为「不可比 case」。</div>`
       : "";
-
-    const f = c.fields || {};
-    $("#f-session").value = f.session_sec == null ? "" : f.session_sec;
-    $("#f-cost").value = f.cost_usd == null ? "" : f.cost_usd;
-    $("#f-latency").value = f.latency_ms == null ? "" : f.latency_ms;
-    $("#f-evidence").value = f.evidence_ts || "";
-    $("#f-notes").value = f.notes || "";
-    $("#f-verdict").value = state.verdicts[pairKey()] || "";
-  }
-
-  function renderRater() {
-    $$("#rater button").forEach((b) => b.classList.toggle("on", b.dataset.rater === state.rater));
   }
 
   function renderVote() {
@@ -393,20 +682,13 @@
       const which = btn.dataset.vote;
       btn.classList.toggle("on", which === "G" ? !!v.g : which === "S" ? !!v.s : !!v.b);
     });
-    $("#reveal-btn").disabled = !(doneA && doneB);
-    $("#reveal-btn").textContent = revealed ? "已揭盲（点此重看映射）" : "揭盲看 A/B";
-    $("#vote-result").textContent = doneA && doneB
-      ? `两侧已评完：A ${numDims(a).length} 维 · B ${numDims(b).length} 维`
-      : `两侧评分未完成：A ${numDims(a).length}/${DIMS.length} · B ${numDims(b).length}/${DIMS.length}`;
 
     const fmt = (c, k) => {
       const n = c.dims[k];
       if (typeof n === "number") return String(n);
       return c.na[k] ? "N/A" : "—";
     };
-    $("#vote-deltas").textContent = revealed
-      ? DIMS.map((d) => `${d.name} A${fmt(a, d.key)} / B${fmt(b, d.key)}`).join(" · ")
-      : "";
+    $("#vote-deltas").textContent = DIMS.map((d) => `${d.name} A${fmt(a, d.key)} / B${fmt(b, d.key)}`).join(" · ");
   }
 
   function renderSummary() {
@@ -423,13 +705,13 @@
       $("#s-gsb-sub").textContent = (g + bt ? "去平局 " + (g / (g + bt)).toFixed(2) : "去平局 —") + " · 已投 " + n + " 条";
     } else {
       $("#s-gsb").textContent = "—";
-      $("#s-gsb-sub").textContent = "揭盲并投 G/S/B 后才有值";
+      $("#s-gsb-sub").textContent = "投 G/S/B 后才有值";
     }
 
     const per = DIMS.map((d) => ({ d, w: 0, l: 0 }));
     Object.keys(state.votes).forEach((k) => {
       const v = state.votes[k];
-      if (!v || !v.revealed) return;
+      if (!v) return;
       const parts = k.split("|");
       if (parts.length < 2) return;
       const models = parts[1].split("~");
@@ -452,9 +734,10 @@
     /* 不可比项只看当前这一组：换一组比较，缺口就跟着变 */
     const gap = [];
     ["A", "B"].forEach((side) => {
-      const m = modelOf(state.slots[side]);
-      Object.entries(m.na || {}).forEach(([dim, reason]) => {
-        gap.push(m.name + " " + (DIMS.find((d) => d.key === dim) || {}).name + "（" + reason + "）");
+      const cell = cellOf(side);
+      const name = modelOf(state.slots[side]).name;
+      Object.entries(cell.na || {}).forEach(([dim, reason]) => {
+        gap.push(name + " " + (DIMS.find((d) => d.key === dim) || {}).name + "（" + reason + "）");
       });
     });
     $("#s-na").textContent = String(gap.length);
@@ -469,7 +752,6 @@
     renderStageHead();
     renderSlots();
     renderDims();
-    renderRater();
     renderVote();
     renderSummary();
   }
@@ -498,95 +780,76 @@
       renderAll();
     });
 
-    $("#side-switch").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-side]");
-      if (!b) return;
-      state.side = b.dataset.side;
+    $("#dims").addEventListener("change", (e) => {
+      const sel = e.target.closest(".dim-score");
+      if (sel) {
+        const side = sel.dataset.side;
+        const k = sel.dataset.dim;
+        const c = cellOf(side);
+        if (sel.value === "na") {
+          const preset = (modelOf(state.slots[side]).na || {})[k];
+          c.na[k] = preset || NA_REASONS[0];
+          delete c.dims[k];
+        } else if (sel.value === "") {
+          delete c.dims[k];
+          delete c.na[k];
+        } else {
+          c.dims[k] = Number(sel.value);
+          delete c.na[k];
+        }
+        persist();
+        renderDims();
+        renderSlots();
+        renderVote();
+        renderSummary();
+        return;
+      }
+      const reason = e.target.closest(".na-reason-sel");
+      if (reason) {
+        cellOf(reason.dataset.side).na[reason.dataset.reason] = reason.value;
+        persist();
+      }
+    });
+
+    $("#dims").addEventListener("input", (e) => {
+      const note = e.target.closest(".ab-note");
+      if (!note) return;
+      const c = cellOf(note.dataset.side);
+      const k = note.dataset.dim;
+      c.notes[k] = c.notes[k] || {};
+      c.notes[k].note = note.value;
+      const side = note.closest(".ab-side");
+      if (side) {
+        const raw = $(".dim-score", side) ? $(".dim-score", side).value : "";
+        side.classList.toggle("need-note", raw !== "" && raw !== "na" && Number(raw) < 3 && note.value.trim() === "");
+      }
       persist();
-      renderSlots();
-      renderDims();
     });
 
     $("#dims").addEventListener("click", (e) => {
-      const dim = e.target.closest("[data-dim]");
-      if (!dim) return;
-      const c = currentCell();
-      const k = dim.dataset.dim;
-      const num = e.target.closest("[data-val]");
-      const naBtn = e.target.closest("[data-na]");
-      if (num) {
-        c.dims[k] = Number(num.dataset.val);
-        delete c.na[k];
-      } else if (naBtn) {
-        if (c.na[k]) {
-          delete c.na[k];
-        } else {
-          const preset = (currentModel().na || {})[k];
-          c.na[k] = preset || NA_REASONS[0];
-          delete c.dims[k];
-        }
-      } else {
-        return;
+      const btn = e.target.closest("[data-stamp]");
+      if (!btn) return;
+      const c = cellOf(btn.dataset.stamp);
+      const k = btn.dataset.dim;
+      const box = btn.parentElement.querySelector(".ab-note");
+      const t = T.time;
+      const stamp = "[" + tcOf(t) + "] ";
+      c.notes[k] = c.notes[k] || {};
+      c.notes[k].ts = t;
+      const cur = box.value;
+      const at = typeof box.selectionStart === "number" ? box.selectionStart : cur.length;
+      box.value = cur.slice(0, at) + stamp + cur.slice(at);
+      c.notes[k].note = box.value;
+      const label = btn.parentElement.querySelector(".ab-ts-val");
+      if (label) label.textContent = tcOf(t);
+      persist();
+      box.focus();
+      box.selectionStart = box.selectionEnd = at + stamp.length;
+      const side = btn.closest(".ab-side");
+      if (side) {
+        const raw = $(".dim-score", side) ? $(".dim-score", side).value : "";
+        side.classList.toggle("need-note", raw !== "" && raw !== "na" && Number(raw) < 3 && box.value.trim() === "");
       }
-      persist();
-      renderDims();
-      renderSlots();
-      renderVote();
-      renderSummary();
-    });
-
-    $("#dims").addEventListener("change", (e) => {
-      const sel = e.target.closest("[data-reason]");
-      if (!sel) return;
-      const dim = e.target.closest("[data-dim]");
-      const c = currentCell();
-      c.na[dim.dataset.dim] = sel.value;
-      persist();
-      renderDims();
-    });
-
-    const fieldMap = {
-      "f-session": "session_sec",
-      "f-cost": "cost_usd",
-      "f-latency": "latency_ms",
-      "f-evidence": "evidence_ts",
-      "f-notes": "notes",
-    };
-    Object.entries(fieldMap).forEach(([id, key]) => {
-      const el = $("#" + id);
-      el.addEventListener("input", () => {
-        const c = currentCell();
-        const raw = el.value.trim();
-        if (key === "session_sec" || key === "latency_ms") {
-          c.fields[key] = raw === "" ? null : Number(raw);
-        } else if (key === "cost_usd") {
-          c.fields[key] = raw === "" ? null : Number(raw);
-        } else {
-          c.fields[key] = raw;
-        }
-        if (key === "session_sec") {
-          const m = currentModel();
-          if (m.rate && raw !== "" && Number.isFinite(Number(raw))) {
-            c.fields.cost_usd = Number((Number(raw) / 60 * m.rate).toFixed(2));
-            $("#f-cost").value = c.fields.cost_usd;
-          }
-        }
-        persist();
-      });
-    });
-
-    $("#f-verdict").addEventListener("input", (e) => {
-      state.verdicts[pairKey()] = e.target.value;
-      persist();
-    });
-
-    $$("#rater button").forEach((b) => {
-      b.addEventListener("click", () => {
-        state.rater = b.dataset.rater;
-        persist();
-        renderRater();
-        toast("当前评分人：" + state.rater);
-      });
     });
 
     $("#vote-row").addEventListener("click", (e) => {
@@ -604,37 +867,18 @@
       renderSummary();
     });
 
-    $("#reveal-btn").addEventListener("click", () => {
-      const k = pairKey();
-      const v = state.votes[k] || { g: false, s: false, b: false };
-      v.revealed = true;
-      state.votes[k] = v;
-      persist();
-      renderSlots();
-      renderDims();
-      renderVote();
-      renderSummary();
-      toast("揭盲：A = " + modelOf(state.slots.A).name + "，B = " + modelOf(state.slots.B).name);
-    });
-
-    $("#sync-btn").addEventListener("click", () => {
-      const vids = $$("#slots video");
-      const btn = $("#sync-btn");
-      if (!vids.length) { toast("本场景还没有接入录屏"); return; }
-      vids.forEach((v) => { try { v.currentTime = 0; } catch (e) {} });
-      vids.forEach((v) => { const p = v.play(); if (p && p.catch) p.catch(() => {}); });
-      btn.classList.add("on");
-      btn.textContent = "同步播放中";
-      const first = vids[0];
-      first.addEventListener("ended", () => {
-        btn.classList.remove("on");
-        btn.textContent = "对齐起点";
-      }, { once: true });
-    });
-
     $("#save-btn").addEventListener("click", () => {
       persist();
-      toast("已保存到本地");
+      const weak = [];
+      ["A", "B"].forEach((side) => {
+        const c = cellOf(side);
+        DIMS.forEach((d) => {
+          const n = c.dims[d.key];
+          const note = (c.notes[d.key] || {}).note || "";
+          if (typeof n === "number" && n < 3 && !note.trim()) weak.push(side + "·" + d.name);
+        });
+      });
+      toast(weak.length ? `草稿已保存；${weak.length} 处低于 3 分没写依据：${weak.join("、")}` : "草稿已保存");
     });
 
     $("#export-btn").addEventListener("click", () => {
@@ -643,20 +887,19 @@
         const c = cellOf(side);
         const m = modelOf(state.slots[side]);
         const dims = {};
-        DIMS.forEach((d) => { dims[d.key] = typeof c.dims[d.key] === "number" ? c.dims[d.key] : "-"; });
+        const dim_notes = {};
+        DIMS.forEach((d) => {
+          dims[d.key] = typeof c.dims[d.key] === "number" ? c.dims[d.key] : "-";
+          const n = c.notes[d.key] || {};
+          if (n.note || n.ts != null) dim_notes[d.key] = { note: n.note || "", ts: n.ts == null ? null : Number(n.ts.toFixed(3)) };
+        });
         return {
           case_id: state.scene,
           model: m.id,
           side: side,
           dims,
+          dim_notes,
           na_reason: c.na,
-          latency_ms: c.fields.latency_ms == null ? null : c.fields.latency_ms,
-          session_sec: c.fields.session_sec == null ? null : c.fields.session_sec,
-          cost_usd: c.fields.cost_usd == null ? null : c.fields.cost_usd,
-          effective_sec: null,
-          evidence_ts: c.fields.evidence_ts || "",
-          notes: c.fields.notes || "",
-          rater: state.rater,
         };
       });
       const v = state.votes[pairKey()] || {};
@@ -667,8 +910,7 @@
         run: {
           mode: "ab",
           slots: state.slots,
-          blind: !v.revealed,
-          verdict: state.verdicts[pairKey()] || "",
+          blind: true,
         },
         gsb: { g: !!v.g, s: !!v.s, b: !!v.b },
         scores,
@@ -676,10 +918,10 @@
       const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "world-" + state.scene + "-" + state.rater + ".json";
+      a.download = "world-" + state.scene + ".json";
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast("已导出本模块 JSON");
+      toast("已导出 JSON");
     });
   }
 

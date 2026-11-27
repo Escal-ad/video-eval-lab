@@ -654,10 +654,33 @@ code, .mono { font-family: var(--mono); }
 
 /* 面板底部按钮常驻可见 + 维度块紧凑一点 */
 .panel .actions {
-  position: sticky; bottom: -16px; z-index: 3;
+  position: sticky; bottom: 0; z-index: 3;
   margin: 14px -16px -16px; padding: 10px 16px 14px;
   background: #fff; border-top: 1px solid var(--line);
 }
 .dim { padding: 8px 0; }
 .ab-note { min-height: 38px; }
 .ab-ts { padding: 2px 4px; }
+
+/* —— world 页：逐维 A/B 下拉 + 同位姿取帧 —— */
+.panel .actions { display: flex; gap: 8px; }
+.panel .actions .btn { flex: 1 1 0; }
+.ab-side .dim-score {
+  width: 100%; margin-top: 0; padding: 5px 6px; font-size: 11.5px; border-radius: 7px;
+  border: 1px solid var(--line-strong); background: #fff; color: var(--ink);
+}
+.ab-side .na-reason-sel {
+  width: 100%; margin-top: 4px; padding: 4px 6px; font-size: 10.5px; border-radius: 6px;
+  border: 1px solid var(--line-strong); background: #fff; color: var(--ink);
+}
+.metric-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.metric-row input { flex: 1 1 0; min-width: 0; }
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.cmp-card { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: #fff; }
+.cmp-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; font-size: 11.5px; }
+.cmp-diff { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.cmp-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cmp-pair figure { margin: 0; }
+.cmp-pair canvas { width: 100%; height: auto; display: block; border-radius: 6px; background: #0b1220; }
+.cmp-pair figcaption { font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin-top: 3px; text-align: center; }
+@media (max-width: 900px) { .cmp-grid { grid-template-columns: 1fr; } }

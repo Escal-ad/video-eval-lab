@@ -71,9 +71,6 @@
           <div class="archive" id="archive"></div>
         </div>
 
-        <div style="margin-top:14px; display:grid; gap:8px;">
-          <a class="btn small" href="dims.html#world" style="width:100%;">看评分锚点</a>
-        </div>
       </aside>
 
       <section class="col workspace">
@@ -85,16 +82,11 @@
           <span class="chip demo">World Model · 四维</span>
         </div>
 
-        <div class="wb-modebar">
-          <span class="mode-note" id="mode-note">两侧独立 Rubric → 整体 A/B 单选 → 揭盲</span>
-        </div>
-
         <div class="syncbar">
           <div class="pair-controls" id="pair-controls">
             <span class="pair-label">候选 1</span><select class="pair-select" id="pair-a" aria-label="候选 1"></select>
             <span class="pair-label">候选 2</span><select class="pair-select" id="pair-b" aria-label="候选 2"></select>
           </div>
-          <button class="btn small" id="sync-btn" type="button">对齐起点</button>
           <span class="spacer"></span>
           <span class="hint">同场景、同初始帧；只对齐动作</span>
         </div>
@@ -105,94 +97,74 @@
 
         <div class="world-grid two-col" id="slots"></div>
 
-        <div class="transport2">
-          <button class="mini" type="button" disabled title="接入视频后可用">⏮ 帧 −1</button>
-          <button class="mini" type="button" disabled title="接入视频后可用">⏭ 帧 +1</button>
-          <button class="mini" type="button" disabled title="两侧同步播放">▶ 同步播放</button>
-          <span class="spacer"></span>
-          <span class="hint" style="margin:0;">双视频位为占位；文件接进来后启用帧步进与同位姿截帧</span>
+        <div class="abbar" id="abbar">
+          <button class="btn small" id="tp-play" type="button">▶ 播放</button>
+          <button class="btn small" id="tp-back" type="button" title="后退一帧">帧 −1</button>
+          <button class="btn small" id="tp-fwd" type="button" title="前进一帧">帧 +1</button>
+          <button class="btn small" id="tp-home" type="button">回到开头</button>
+          <span class="tread" id="tp-read">00:00.000 / 00:00.000</span>
+          <select class="mini-select" id="tp-rate" aria-label="倍速">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+          </select>
+        </div>
+        <div class="ab-timeline">
+          <div class="ab-track" id="tp-track" aria-label="播放进度">
+            <div class="ab-seg" id="tp-seg">—</div>
+            <div class="ab-playhead" id="tp-playhead"></div>
+          </div>
+          <div class="ab-ruler" id="tp-ruler"></div>
+        </div>
+        <div class="ab-foot">
+          <span class="ab-hint" id="tp-hint">—</span>
         </div>
 
         <div style="margin-top:16px;">
           <div class="sec-head" style="margin-bottom:8px;">
             <h3>同位姿对照</h3>
-            <span class="sub">去程记位姿，回程同位置截帧</span>
+            <span class="sub">去程 0s 基准帧 ↔ 回程同位置帧（跟随播放头）</span>
           </div>
-          <div class="compare">
-            <div class="frame"><div><strong>去程 · 0s 基准帧</strong>布局 / 遮挡 / 光照基准</div></div>
-            <div class="frame"><div><strong>回程 · 同位置帧</strong>与左图逐项比对，标记差异</div></div>
+          <div class="cmp-grid">
+            <div class="cmp-card" data-role="A">
+              <div class="cmp-head"><strong>模型 A</strong><span class="cmp-diff" data-diff="A">—</span></div>
+              <div class="cmp-pair">
+                <figure><canvas data-frame="A0" width="320" height="180"></canvas><figcaption>0.000 s</figcaption></figure>
+                <figure><canvas data-frame="At" width="320" height="180"></canvas><figcaption data-t="A">—</figcaption></figure>
+              </div>
+            </div>
+            <div class="cmp-card" data-role="B">
+              <div class="cmp-head"><strong>模型 B</strong><span class="cmp-diff" data-diff="B">—</span></div>
+              <div class="cmp-pair">
+                <figure><canvas data-frame="B0" width="320" height="180"></canvas><figcaption>0.000 s</figcaption></figure>
+                <figure><canvas data-frame="Bt" width="320" height="180"></canvas><figcaption data-t="B">—</figcaption></figure>
+              </div>
+            </div>
           </div>
-          <div class="hint" style="margin-top:6px;">这是「记忆一致性」最硬的证据：两帧并排 + 差异框 + 时间戳。</div>
+          <div class="hint" style="margin-top:6px;">两帧 + 差异度 + 时间戳。差异度 = 该模型 0s 帧与当前帧的逐像素平均差，越小越「回得去」。</div>
         </div>
       </section>
 
       <aside class="col panel">
-        <h3 id="panel-title">评分</h3>
-        <div class="panel-sub" id="model-sub">选择任意模型开始</div>
-
-        <div class="side-switch" id="side-switch">
-          <button type="button" data-side="A" class="on">A</button>
-          <button type="button" data-side="B">B</button>
-        </div>
+        <h3 id="panel-title">按片段证据评分</h3>
+        <div class="panel-sub" id="model-sub">1 明显不符，3 大体满足，5 完整稳定。未检查留空；低于 3 分需理由。</div>
 
         <div id="dims"></div>
         <div id="na-warn"></div>
 
-        <div class="field">
-          <label>评分人</label>
-          <div class="rater" id="rater">
-            <button type="button" data-rater="r1" class="on">r1</button>
-            <button type="button" data-rater="r2">r2</button>
-          </div>
-          <div class="hint">两人独立打，分歧格单独记；样本小只算分歧率</div>
-        </div>
-
-        <div class="field">
-          <label>会话时长 / 成本（实时流 ready 就计费）</label>
-          <div class="row2">
-            <input id="f-session" placeholder="秒，如 142">
-            <input id="f-cost" placeholder="$ 如 0.99">
-          </div>
-          <div class="hint">按会话存活时间算，不是按成片秒数 × 单价</div>
-        </div>
-
-        <div class="field">
-          <label for="f-latency">交互延迟（ms，实测）</label>
-          <input id="f-latency" placeholder="例如 180">
-        </div>
-
-        <div class="field">
-          <label for="f-evidence">证据时间戳</label>
-          <input id="f-evidence" placeholder="例如 00:06.2">
-        </div>
-
-        <div class="field">
-          <label for="f-verdict">本题结论（一句话）</label>
-          <input id="f-verdict" placeholder="例如：B 回程位置更准，6.4s 处杯子仍在原位">
-        </div>
-
-        <div class="field">
-          <label for="f-notes">失败模式 / 备注</label>
-          <textarea id="f-notes" placeholder="例如：绕回起点时红色杯子消失；转身后地标左移。"></textarea>
-        </div>
-
         <div class="vote-box hidden" id="vote-box">
-          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后揭盲</span></div>
+          <div class="vote-head"><strong>整体判断</strong><span>两侧都评完后可投</span></div>
           <div class="vote-row" id="vote-row">
             <button class="vote-btn" type="button" data-vote="G">A 更好</button>
             <button class="vote-btn" type="button" data-vote="S">持平</button>
             <button class="vote-btn" type="button" data-vote="B">B 更好</button>
           </div>
-          <button class="btn small ghost" type="button" id="reveal-btn" style="width:100%;margin-top:8px;">揭盲看 A/B</button>
-          <div class="vote-result" id="vote-result">两侧各 0/4 维</div>
           <div class="vote-deltas" id="vote-deltas"></div>
         </div>
 
         <div class="actions">
-          <button class="btn primary" id="save-btn" type="button">保存本模型评分</button>
-        </div>
-        <div style="margin-top:12px;">
-          <button class="btn small" id="export-btn" type="button">导出本模块 JSON</button>
+          <button class="btn" id="export-btn" type="button">导出 JSON</button>
+          <button class="btn" id="save-btn" type="button">保存草稿</button>
         </div>
       </aside>
     </div>
