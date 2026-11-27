@@ -653,9 +653,10 @@ code, .mono { font-family: var(--mono); }
 .ab-side.need-note .ab-note::placeholder { color: #c2685f; }
 
 /* 面板底部按钮常驻可见 + 维度块紧凑一点 */
+.panel { display: flex; flex-direction: column; }
 .panel .actions {
   position: sticky; bottom: 0; z-index: 3;
-  margin: 14px -16px -16px; padding: 10px 16px 14px;
+  margin: auto -16px -16px; padding: 10px 16px 14px;
   background: #fff; border-top: 1px solid var(--line);
 }
 .dim { padding: 8px 0; }
